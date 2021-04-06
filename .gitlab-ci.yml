@@ -9,6 +9,8 @@ variables:
 
 containerization:
   stage: containerization
+  tags:
+    - moreillon
   script:
     - echo ${CONTAINER_REGISTRY}
     # Docker hub login
@@ -20,6 +22,8 @@ containerization:
 
 deployment:
   stage: deploy
+  tags:
+    - moreillon
   script:
     - envsubst < deployment.yml | kubectl apply -f -
     - kubectl rollout restart deployment/${APPLICATION_NAME}
