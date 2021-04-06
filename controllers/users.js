@@ -41,6 +41,17 @@ function get_user_id_from_query_or_own(req, res){
   return user_id
 }
 
+function hash_password(password_plain) {
+  return new Promise ( (resolve, reject) => {
+    bcrypt.hash(password_plain, 10, (error, password_hashed) => {
+      if(error) return reject({code: 500, message: error})
+      resolve(password_hashed)
+      console.log(`[Bcrypt] Password hashed`)
+    })
+  })
+}
+
+
 
 
 exports.get_user = (req, res) => {
@@ -83,18 +94,17 @@ exports.create_user = (req, res) => {
   if(!('password_plain' in req.body.user.properties)) return res.status(400).send(`Missing password`)
   if(!('username' in req.body.user.properties)) return res.status(400).send(`Username missing`)
 
-  bcrypt.hash(req.body.user.properties.password_plain, 10, (err, hash) => {
-    if(err) return res.status(500).send(`Error hashing password: ${err}`)
+  const session = driver.session()
+
+  hash_password(password_plain)
+  .then(password_hashed => {
 
     // do not store the plain text password
-    delete req.body.user.properties.password_plain
-
+    req.body.user.properties.password_plain
     // Store the hashed version instead
-    req.body.user.properties.password_hashed = hash
+    req.body.user.properties.password_hashed = password_hashed
 
-    var session = driver.session()
-    session
-    .run(`
+    const query = `
       // create the user node
       CREATE (user:User)
 
@@ -103,15 +113,17 @@ exports.create_user = (req, res) => {
 
       // Return the user
       RETURN user
-      `, {
-      user: req.body.user
-    })
-    .then(result => {
-      res.send(result.records[0].get('user'))
-    })
-    .catch(error => { res.status(500).send(`Error creating user: ${error}`) })
-    .finally(() => session.close())
+      `
+
+    return session.run(query, { user: req.body.user })
   })
+  .then(result => {
+    const user = result.records[0].get('user')
+    console.log(`[Neo4J] User created`)
+    res.send(user)
+  })
+  .catch(error => { res.status(500).send(`Error creating user: ${error}`) })
+  .finally(() => session.close())
 
 }
 
