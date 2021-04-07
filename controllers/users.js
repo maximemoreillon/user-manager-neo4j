@@ -97,7 +97,7 @@ exports.create_user = (req, res) => {
 
   const session = driver.session()
 
-  hash_password(password_plain)
+  hash_password(req.body.user.properties.password_plain)
   .then(password_hashed => {
 
     // do not store the plain text password
@@ -120,7 +120,7 @@ exports.create_user = (req, res) => {
   })
   .then(result => {
     const user = result.records[0].get('user')
-    console.log(`[Neo4J] User created`)
+    console.log(`[Neo4J] User ${user.identity} created`)
     res.send(user)
   })
   .catch(error => { res.status(500).send(`Error creating user: ${error}`) })
