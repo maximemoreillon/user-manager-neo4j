@@ -268,8 +268,8 @@ exports.create_admin_if_not_exists = () => {
 
   console.log(`[Neo4J] Creating admin account...`)
 
-  const default_admin_password = process.env.DEFAULT_ADMIN_PASSWORD || 'administrator'
-  const default_admin_username = process.env.DEFAULT_ADMIN_USERNAME || 'administrator'
+  const default_admin_password = process.env.DEFAULT_ADMIN_PASSWORD || 'admin'
+  const default_admin_username = process.env.DEFAULT_ADMIN_USERNAME || 'admin'
 
   const session = driver.session()
 
@@ -311,8 +311,8 @@ exports.create_admin_if_not_exists = () => {
   })
   .catch(error => {
     if(error.code === 'ServiceUnavailable') {
-      console.log(`[Neo4J] Neo4J unavailable, retrying in 5 seconds`)
-      setTimeout(exports.create_admin_if_not_exists, 5000)
+      console.log(`[Neo4J] Neo4J unavailable, retrying in 10 seconds`)
+      setTimeout(exports.create_admin_if_not_exists, 10000)
     }
 
     else console.log(error)

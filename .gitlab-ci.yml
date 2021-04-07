@@ -12,7 +12,6 @@ containerization:
   tags:
     - moreillon
   script:
-    - echo ${CONTAINER_REGISTRY}
     # Docker hub login
     - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
     # Build and push container
