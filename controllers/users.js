@@ -68,6 +68,7 @@ exports.get_user = (req, res) => {
     user_id
   })
   .then(result => {
+    console.log(`[Neo4J] USer ${user_id} queried`)
     res.send(result.records[0].get('user'))
   })
   .catch(error => {
@@ -296,10 +297,10 @@ exports.create_admin_if_not_exists = () => {
       })
       .then(result => {
         if(result.records.length > 0) {
-          console.log(`Administrator account created`)
+          console.log(`[Neo4J] Administrator account created`)
         }
         else {
-          console.log(`Administrator already existed`)
+          console.log(`[Neo4J] Administrator already existed`)
         }
 
       })

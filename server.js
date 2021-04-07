@@ -26,8 +26,8 @@ app.get('/', (req, res) => {
     application_name: 'User manager API',
     author: 'Maxime MOREILLON',
     version: pjson.version,
-    neo4j_url: process.env.NEO4J_URL,
-    authentication_api_url: process.env.AUTHENTICATION_API_URL
+    neo4j_url: process.env.NEO4J_URL || 'UNDEFINED',
+    authentication_api_url: process.env.AUTHENTICATION_API_URL || 'UNDEFINED'
   })
 })
 
@@ -35,5 +35,5 @@ app.use('/users', users_router)
 
 // Start server
 app.listen(APP_PORT, () => {
-  console.log(`User manager listening on *:${APP_PORT}`);
+  console.log(`[Express] User manager listening on *:${APP_PORT}`);
 })

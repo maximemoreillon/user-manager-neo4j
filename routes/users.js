@@ -1,10 +1,12 @@
 const express = require('express')
 const controller = require('../controllers/users.js')
-const auth = require('@moreillon/authentication_middleware')
+
+const auth = require('@moreillon/express_identification_middleware')
+const options = { url: `${process.env.AUTHENTICATION_API_URL}/whoami` }
 
 const router = express.Router()
 
-router.use(auth.authenticate)
+router.use(auth(options))
 
 router.route('/')
   .post(controller.create_user)
