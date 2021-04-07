@@ -266,21 +266,24 @@ exports.get_all_users = (req, res) => {
 
 exports.create_admin_if_not_exists = () => {
 
+  console.log(`[Neo4J] Creating admin account...`)
+
   const default_admin_password = process.env.DEFAULT_ADMIN_PASSWORD || 'administrator'
+  const default_admin_username = process.env.DEFAULT_ADMIN_USERNAME || 'administrator'
 
-  bcrypt.hash(default_admin_password, 10, (err, hash) => {
-    if(err) console.log(`Error hashing password: ${err}`)
+  const session = driver.session()
 
-    const session = driver.session();
-    session
-    .run(`
+  hash_password(default_admin_password)
+  .then(default_admin_password_hashed => {
+
+    const query = `
       // Create a dummy node so that the administrator account does not get ID 0
       MERGE (dummy:DummyNode)
 
       // Find the administrator account or create it if it does not exist
       MERGE (administrator:User {username:"administrator"})
 
-      // Make the administrator an actual administrator
+      // Make the administrator an actual $default_admin_username
       SET administrator.isAdmin = true
 
       // Check if the administrator account is missing its password
@@ -292,19 +295,29 @@ exports.create_admin_if_not_exists = () => {
 
       // Return the account
       RETURN 'OK'
-      `, {
-        default_admin_password_hashed: hash
-      })
-      .then(result => {
-        if(result.records.length > 0) {
-          console.log(`[Neo4J] Administrator account created`)
-        }
-        else {
-          console.log(`[Neo4J] Administrator already existed`)
-        }
+      `
 
-      })
-      .catch(error => { console.log(error)})
-      .finally( () => session.close())
+    const params = {
+      default_admin_password_hashed,
+      default_admin_username,
+    }
+
+    return session.run(query, params)
+
   })
+  .then(result => {
+    if(result.records.length > 0) console.log(`[Neo4J] Administrator account created`)
+    else console.log(`[Neo4J] Administrator already existed`)
+  })
+  .catch(error => {
+    if(error.code === 'ServiceUnavailable') {
+      console.log(`[Neo4J] Neo4J unavailable, retrying in 5 seconds`)
+      setTimeout(exports.create_admin_if_not_exists, 5000)
+    }
+
+    else console.log(error)
+
+
+  })
+  .finally( () => session.close())
 }
