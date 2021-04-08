@@ -281,9 +281,9 @@ exports.create_admin_if_not_exists = () => {
       MERGE (dummy:DummyNode)
 
       // Find the administrator account or create it if it does not exist
-      MERGE (administrator:User {username:"administrator"})
+      MERGE (administrator:User {username: $default_admin_username})
 
-      // Make the administrator an actual $default_admin_username
+      // Make the administrator an actual admin
       SET administrator.isAdmin = true
 
       // Check if the administrator account is missing its password
