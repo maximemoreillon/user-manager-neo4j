@@ -10,7 +10,7 @@ router.use(auth(options))
 
 router.route('/')
   .post(controller.create_user)
-  .get(controller.get_all_users)
+  .get(controller.get_users)
 
 router.route('/:user_id')
   .get(controller.get_user)

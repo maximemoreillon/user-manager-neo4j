@@ -51,6 +51,14 @@ function hash_password(password_plain) {
   })
 }
 
+function compare_password(password_plain, password_hashed){
+  return new Promise( (resolve, reject) => {
+    bcrypt.compare(password_plain, password_hashed, (error, result) => {
+      if(error) return reject(error)
+      resolve(result)
+    })
+  })
+}
 
 
 
@@ -215,41 +223,74 @@ exports.patch_user = (req, res) => {
 exports.update_password = (req, res) => {
 
   // Input sanitation
-  const new_password = req.body.new_password
-    || req.body.password
+  const {new_password, new_password_confirm, current_password} = req.body
 
-  if(!new_password) return res.status(400).send(`Password missing from body`)
+  if(!new_password) return res.status(400).send(`New nassword missing`)
+  if(!new_password_confirm) return res.status(400).send(`New password confirm missing`)
 
-  const user_id = self_only_unless_admin(req, res)
+  // Get current user ID
+  const current_user_id = self_only_unless_admin(req, res)
 
-  // Hash the provided password
-  bcrypt.hash(new_password, 10, (err, new_password_hashed) => {
-    if(err) return res.status(500).send(`Error hashing password: ${err}`)
+  // Retrieve user ID
+  let user_id = req.params.user_id
+  if(user_id === 'self') user_id = current_user_id
 
-    const session = driver.session();
-    session
-    .run(`
-      // Find the user using ID
-      MATCH (user:User)
-      WHERE id(user) = toInteger($user_id)
+  const user_is_admin = res.locals.user.properties.isAdmin
 
-      // Set the new password
-      SET user.password_hashed = $new_password_hashed
+  // Prevent an user from modifying another's password
+  if(user_id !== current_user_id && !user_is_admin) {
+    return res.status(403).send(`Unauthorized to modify another user's password`)
+  }
 
-      // Return user once done
-      RETURN user
-      `, {
-        user_id,
-        new_password_hashed,
-      })
-      .then(result => { res.send(result.records) })
-      .catch(error => res.status(400).send(`Error accessing DB: ${error}`))
-      .finally( () => session.close())
+  // Only allow admins to set password without checking the current password
+  if(!user_is_admin && !current_password) {
+    return res.status(400).send(`Current password missing`)
+  }
+
+  const session = driver.session()
+  session.run(`
+    // Find the user using ID
+    MATCH (user:User)
+    WHERE id(user) = toInteger($user_id)
+
+    // Return user once done
+    RETURN user.password_hashed as password
+    `, { user_id })
+  .then(result => {
+    const current_password_hashed = result.records[0].get('password')
+    if(user_is_admin) return
+    return compare_password(current_password, current_password_hashed)
   })
+  .then(() => hash_password(new_password))
+  .then(password_hashed => {
+    return session.run(`
+    // Find the user using ID
+    MATCH (user:User)
+    WHERE id(user) = toInteger($user_id)
+
+    // Set the new password
+    SET user.password_hashed = $password_hashed
+    SEt user.password_changed = true
+
+    // Return user once done
+    RETURN user
+    `, { user_id, password_hashed }
+    )
+  })
+  .then(result => {
+    console.log(`[Neo4J] Password of user ${user_id} updated`)
+    res.send(result.records)
+   })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send(error)
+  })
+  .finally( () => session.close() )
+
 }
 
-exports.get_all_users = (req, res) => {
-  // Protecting this route might be necessary
+exports.get_users = (req, res) => {
+
   var session = driver.session()
   session
   .run(`
@@ -316,8 +357,6 @@ exports.create_admin_if_not_exists = () => {
     }
 
     else console.log(error)
-
-
   })
   .finally( () => session.close())
 }
