@@ -198,7 +198,6 @@ exports.patch_user = (req, res) => {
     }
   }
 
-
   const session = driver.session()
   session
   .run(`
@@ -291,18 +290,56 @@ exports.update_password = (req, res) => {
 
 exports.get_users = (req, res) => {
 
-  var session = driver.session()
+  let search_query = ''
+  if(req.query.search) {
+    search_query = `
+    // Make a list of the keys of each node
+    // Additionally, filter out fields that should not be searched
+    WITH [key IN KEYS(user) WHERE NOT key IN $exceptions] AS keys, user
+
+    // Unwinding
+    UNWIND keys as key
+
+    // Filter nodes by looking for properties
+    WITH key, user
+    WHERE toLower(toString(user[key])) CONTAINS toLower($search)
+    `
+  }
+
+  let ids_query = ''
+  if(req.query.ids) {
+    search_query = `
+    WITH user
+
+    // Unwinding
+    UNWIND $ids as id
+    WITH id, user
+    WHERE id(user)=toInteger(id)
+    `
+  }
+
+  const session = driver.session()
   session
   .run(`
     MATCH (user:User)
-    RETURN user
+
+    ${search_query}
+    ${ids_query}
+
+    RETURN DISTINCT user
+
     LIMIT 100
-    `, {})
-  .then(result => {
-    res.send(result.records)
+    `, {
+      search: req.query.search,
+      exceptions: [ 'password_hashed' ],
+      ids: req.query.ids,
+    })
+  .then(result => { res.send(result.records) })
+  .catch(error => {
+    console.error(error)
+    res.status(400).send(`Error accessing DB: ${error}`)
   })
-  .catch(error => { res.status(500).send(`Error getting users: ${error}`) })
-  .finally(() => session.close())
+  .finally( () => { session.close() })
 }
 
 exports.create_admin_if_not_exists = () => {
