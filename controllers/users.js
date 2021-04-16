@@ -334,7 +334,10 @@ exports.get_users = (req, res) => {
       exceptions: [ 'password_hashed' ],
       ids: req.query.ids,
     })
-  .then(result => { res.send(result.records) })
+  .then(result => {
+    const users = records.map(record => record.get('user'))
+    res.send( users )
+  })
   .catch(error => {
     console.error(error)
     res.status(400).send(`Error accessing DB: ${error}`)
