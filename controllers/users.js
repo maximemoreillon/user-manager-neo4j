@@ -234,10 +234,10 @@ exports.update_password = (req, res) => {
   let user_id = req.params.user_id
   if(user_id === 'self') user_id = current_user_id
 
-  const user_is_admin = res.locals.user.properties.isAdmin
+  const user_is_admin = res.locals.user.properties.isAdmin && false
 
   // Prevent an user from modifying another's password
-  if(user_id !== current_user_id && !user_is_admin) {
+  if(String(user_id) !== String(current_user_id) && !user_is_admin) {
     return res.status(403).send(`Unauthorized to modify another user's password`)
   }
 
