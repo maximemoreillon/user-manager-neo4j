@@ -255,8 +255,9 @@ exports.update_password = (req, res) => {
     // Return user once done
     RETURN user.password_hashed as password
     `, { user_id })
-  .then(result => {
-    const current_password_hashed = result.records[0].get('password')
+  .then( ({records}) => {
+    if(records.length < 1) throw 'User not found'
+    const current_password_hashed = records[0].get('password')
     if(user_is_admin) return
     return compare_password(current_password, current_password_hashed)
   })
@@ -276,9 +277,10 @@ exports.update_password = (req, res) => {
     `, { user_id, password_hashed }
     )
   })
-  .then(result => {
+  .then(({records}) => {
+    if(records.length < 1) throw 'User not found'
+    res.send(records[0].get('user'))
     console.log(`[Neo4J] Password of user ${user_id} updated`)
-    res.send(result.records)
    })
   .catch(error => {
     console.log(error)
