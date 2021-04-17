@@ -116,7 +116,7 @@ const generate_token = (user) => {
   })
 }
 
-const verify_token = (token) => {
+const decode_token = (token) => {
   return new Promise ( (resolve, reject) => {
 
     const JWT_SECRET = process.env.JWT_SECRET
@@ -136,23 +136,6 @@ const verify_token = (token) => {
   })
 }
 
-const retrieve_token_from_body_or_query = (req) => {
-  return new Promise ( (resolve, reject) => {
-
-    const token = req.body.token
-      || req.body.jwt
-      || req.query.jwt
-      || req.query.token
-
-    if(!token) return reject({code: 400, message: `Missing token`})
-
-    resolve(token)
-
-    console.log(`[Auth] Token retrieved from body or query`)
-
-  })
-}
-
 const retrieve_token_from_headers = (req) => {
   return new Promise ( (resolve, reject) => {
 
@@ -169,7 +152,19 @@ const retrieve_token_from_headers = (req) => {
   })
 }
 
-
+exports.middleware = (req, res, next) => {
+  retrieve_token_from_headers(req, res)
+   .then(decode_token)
+   .then( ({user_id}) => find_user_in_db(user_id) )
+   .then( user => {
+     res.locals.user = user
+     next()
+   })
+   .catch( error => {
+    console.log(error)
+    res.status(403).send(error)
+  })
+}
 
 exports.login = (req, res) => {
 
