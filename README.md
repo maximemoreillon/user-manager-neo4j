@@ -10,6 +10,7 @@
 | /users/{user_id} | DELETE | - | Delete user with the given user ID. |
 | /users/{user_id} | PATCH | new user properties | Update user with the given user ID. |
 | /users/{user_id}/password | PUT | current password, new_password, new_password_confirm | Update the password of user with the given user ID. |
+| /auth/login | POST | username, password | Login, i.e. exchange credentials for a JWT |
 
 Note: To target the user currently logged in, use 'self' as ID
 
