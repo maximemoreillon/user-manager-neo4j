@@ -75,9 +75,13 @@ exports.get_user = (req, res) => {
     `, {
     user_id
   })
-  .then(result => {
+  .then( ({records}) => {
+    if(records.length < 1) {
+      console.log(`[neo4J] User ${user_id} not found`)
+      res.status(404).send(`User ${user_id} not found`)
+    }
     console.log(`[Neo4J] USer ${user_id} queried`)
-    res.send(result.records[0].get('user'))
+    res.send(records[0].get('user'))
   })
   .catch(error => {
     console.log(error)

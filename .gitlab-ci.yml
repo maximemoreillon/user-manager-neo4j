@@ -24,7 +24,7 @@ deployment:
   tags:
     - moreillon
   script:
-    - envsubst < deployment.yml | kubectl apply -f -
+    - envsubst < kubernetes_manifest.yml | kubectl apply -f -
     - kubectl rollout restart deployment/${APPLICATION_NAME}
   environment:
     name: production

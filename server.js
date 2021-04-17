@@ -5,7 +5,7 @@ const cors = require('cors')
 const dotenv = require('dotenv')
 const pjson = require('./package.json')
 
-
+const auth_router = require('./routes/auth.js')
 const users_router = require('./routes/users.js')
 const controller = require('./controllers/users.js')
 
@@ -31,6 +31,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/users', users_router)
+app.use('/auth', auth_router)
 
 // Start server
 app.listen(APP_PORT, () => {
