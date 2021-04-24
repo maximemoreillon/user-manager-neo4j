@@ -25,16 +25,11 @@ function self_only_unless_admin(req, res){
 }
 
 function get_current_user_id(res){
-  return res.locals.user.identity.low
-    ?? res.locals.user.identity
+  return res.locals.user.identity
 }
 
 function get_user_id_from_query_or_own(req, res){
   let user_id = req.params.user_id
-    ?? req.query.user_id
-    ?? req.query.id
-    ?? res.locals.user.identity.low
-    ?? res.locals.user.identity
 
   if(user_id === 'self') user_id = get_current_user_id(res)
 
@@ -80,8 +75,8 @@ exports.get_user = (req, res) => {
       console.log(`[neo4J] User ${user_id} not found`)
       res.status(404).send(`User ${user_id} not found`)
     }
-    console.log(`[Neo4J] USer ${user_id} queried`)
     res.send(records[0].get('user'))
+    console.log(`[Neo4J] USer ${user_id} queried`)
   })
   .catch(error => {
     console.log(error)
@@ -92,50 +87,64 @@ exports.get_user = (req, res) => {
 
 exports.create_user = (req, res) => {
 
-  // TODO: Prevent registering a user if identifier already exists
-
-  // TODO: Password confirm maybe?
-
   if(!res.locals.user.properties.isAdmin){
+    console.log(`[Express] Unauthorized attempt to create a user`)
     return res.status(403).send(`Only administrators can create users`)
   }
 
+  const {username, password} = req.body
+  if(!username) {
+    console.log(`[Express] userrname not defined`)
+    return res.status(400).send(`username not defined`)
+  }
 
-  // Input sanitation
-  if(!('user' in req.body)) return res.status(400).send(`User missing from body`)
-  if(!('properties' in req.body.user)) return res.status(400).send(`User properties missing from user`)
-  if(!('password_plain' in req.body.user.properties)) return res.status(400).send(`Missing password`)
-  if(!('username' in req.body.user.properties)) return res.status(400).send(`Username missing`)
+  if(!password) {
+    console.log(`[Express] password not defined`)
+    return res.status(400).send(`password not defined`)
+  }
 
   const session = driver.session()
 
-  hash_password(req.body.user.properties.password_plain)
+  hash_password(password)
   .then(password_hashed => {
-
-    // do not store the plain text password
-    req.body.user.properties.password_plain
-    // Store the hashed version instead
-    req.body.user.properties.password_hashed = password_hashed
 
     const query = `
       // create the user node
-      CREATE (user:User)
+      MERGE (user:User {username: $username})
+
+      // If the user does not have a password, i.e. does not exist
+      // Prevent further execution
+      WITH user
+      WHERE NOT EXISTS(user.password_hashed)
 
       // Set properties
-      SET user = $user.properties
+      SET user.password_hashed = $password_hashed
+      SET user.display_name = $username
 
       // Return the user
       RETURN user
       `
 
-    return session.run(query, { user: req.body.user })
+    const params = {
+      username,
+      password_hashed
+    }
+
+    return session.run(query, params)
   })
-  .then(result => {
-    const user = result.records[0].get('user')
+  .then( ({records}) => {
+    if(records.length < 1) {
+      console.log(`[Neo4J] Failed attempt at creating duplicate user ${username}`)
+      return res.status(400).send(`User ${username} already exists`)
+    }
+    const user = records[0].get('user')
     console.log(`[Neo4J] User ${user.identity} created`)
     res.send(user)
   })
-  .catch(error => { res.status(500).send(`Error creating user: ${error}`) })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send(`Error creating user: ${error}`)
+   })
   .finally(() => session.close())
 
 }
