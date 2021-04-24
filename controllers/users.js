@@ -340,7 +340,7 @@ exports.get_users = (req, res) => {
       exceptions: [ 'password_hashed' ],
       ids: req.query.ids,
     })
-  .then(result => {
+  .then(({records}) => {
     const users = records.map(record => record.get('user'))
     res.send( users )
   })
