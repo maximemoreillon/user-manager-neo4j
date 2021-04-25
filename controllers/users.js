@@ -73,7 +73,7 @@ exports.get_user = (req, res) => {
   .then( ({records}) => {
     if(records.length < 1) {
       console.log(`[neo4J] User ${user_id} not found`)
-      res.status(404).send(`User ${user_id} not found`)
+      return res.status(404).send(`User ${user_id} not found`)
     }
     res.send(records[0].get('user'))
     console.log(`[Neo4J] USer ${user_id} queried`)
@@ -138,7 +138,7 @@ exports.create_user = (req, res) => {
       return res.status(400).send(`User ${username} already exists`)
     }
     const user = records[0].get('user')
-    console.log(`[Neo4J] User ${user.identity} created`)
+    console.log(`[Neo4J] User ${user.properties.username} (ID ${user.identity}) created`)
     res.send(user)
   })
   .catch(error => {
@@ -369,7 +369,7 @@ exports.create_admin_if_not_exists = () => {
 
   const session = driver.session()
 
-  hash_password(default_admin_password)
+  return hash_password(default_admin_password)
   .then(default_admin_password_hashed => {
 
     const query = `
@@ -401,8 +401,8 @@ exports.create_admin_if_not_exists = () => {
     return session.run(query, params)
 
   })
-  .then(result => {
-    if(result.records.length > 0) console.log(`[Neo4J] Administrator account created`)
+  .then(({records}) => {
+    if(records.length > 0) console.log(`[Neo4J] Administrator account created`)
     else console.log(`[Neo4J] Administrator already existed`)
   })
   .catch(error => {
@@ -414,4 +414,17 @@ exports.create_admin_if_not_exists = () => {
     else console.log(error)
   })
   .finally( () => session.close())
+}
+
+exports.delete_all_users = () => {
+  const session = driver.session()
+  const query = `
+    MATCH (user:User)
+    DETACH DELETE user
+    `
+  return session.run(query)
+  .then( () => { console.log(`[Neo4J] all users deleted`) })
+  .catch(error => { console.log(error) })
+  .finally( () => session.close())
+
 }

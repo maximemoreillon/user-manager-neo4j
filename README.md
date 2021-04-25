@@ -8,7 +8,7 @@ A simple user management and authentication service built around a Neo4J databas
 | --- | --- | --- | --- |
 | / | GET | - | Show application configuration |
 | /users | GET | limit | Get the list of users |
-| /users | POST | user properties | Creates a user. Mandatory properties are username (or email_address) and password |
+| /users | POST | {username, password} | Creates a user |
 | /users/{user_id} | GET | - | Get the user with the given user ID. |
 | /users/{user_id} | DELETE | - | Delete user with the given user ID. |
 | /users/{user_id} | PATCH | new user properties | Update user with the given user ID. |
