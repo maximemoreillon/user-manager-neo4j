@@ -39,3 +39,5 @@ app.listen(APP_PORT, () => {
 })
 
 controller.create_admin_if_not_exists()
+
+exports.app = app
