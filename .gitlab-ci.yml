@@ -20,7 +20,6 @@ test:
       docker run
       --rm
       --name user-manager-neo4j-tdd
-      --network tdd
       -e NEO4J_URL=bolt://192.168.1.2:7687
       -e NEO4J_USERNAME=${TEST_NEO4J_USERNAME}
       -e NEO4J_PASSWORD=${TEST_NEO4J_PASSWORD}
