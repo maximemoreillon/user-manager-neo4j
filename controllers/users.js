@@ -240,6 +240,8 @@ exports.update_password = (req, res) => {
   if(!new_password) return res.status(400).send(`New nassword missing`)
   if(!new_password_confirm) return res.status(400).send(`New password confirm missing`)
 
+  // TOdo: password confirm check
+
   // Get current user ID
   const current_user_id = self_only_unless_admin(req, res)
 
@@ -247,7 +249,7 @@ exports.update_password = (req, res) => {
   let user_id = req.params.user_id
   if(user_id === 'self') user_id = current_user_id
 
-  const user_is_admin = res.locals.user.properties.isAdmin && false
+  const user_is_admin = res.locals.user.properties.isAdmin
 
   // Prevent an user from modifying another's password
   if(String(user_id) !== String(current_user_id) && !user_is_admin) {
