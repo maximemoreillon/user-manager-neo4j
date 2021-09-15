@@ -71,11 +71,16 @@ exports.get_user = (req, res) => {
     user_id
   })
   .then( ({records}) => {
-    if(records.length < 1) {
+
+    if(!records.length) {
       console.log(`[neo4J] User ${user_id} not found`)
       return res.status(404).send(`User ${user_id} not found`)
     }
-    res.send(records[0].get('user'))
+
+    const user = records[0].get('user')
+    delete user.properties.password_hashed
+
+    res.send(user)
     console.log(`[Neo4J] USer ${user_id} queried`)
   })
   .catch(error => {
@@ -133,10 +138,12 @@ exports.create_user = (req, res) => {
     return session.run(query, params)
   })
   .then( ({records}) => {
-    if(records.length < 1) {
+
+    if(!records.length) {
       console.log(`[Neo4J] Failed attempt at creating duplicate user ${username}`)
       return res.status(400).send(`User ${username} already exists`)
     }
+
     const user = records[0].get('user')
     console.log(`[Neo4J] User ${user.properties.username} (ID ${user.identity}) created`)
     res.send(user)
@@ -174,8 +181,13 @@ exports.delete_user = (req, res) => {
     `, {
     user_id
   })
-  .then(result => {
-    if(result.records.length === 0 ) return res.status(400).send(`User deletion failed`)
+  .then(({records}) => {
+
+    if(!records.length) {
+      console.log(`[neo4J] User ${user_id} deletion failed`)
+      return res.status(404).send(`User ${user_id} deletion failed`)
+    }
+
     res.send("User deleted successfully")
   })
   .catch(error => {
@@ -222,8 +234,17 @@ exports.patch_user = (req, res) => {
     user_id,
     properties: req.body,
   })
-  .then(result => {
-    res.send(result.records)
+  .then( ({records}) => {
+
+    if(!records.length) {
+      console.log(`[neo4J] User ${user_id} not found`)
+      return res.status(404).send(`User ${user_id} not found`)
+    }
+
+    const user = records[0].get('user')
+    delete user.properties.password_hashed
+    res.send(user)
+    console.log(`[Neo4J] User ${user_id} updated`)
   })
   .catch(error => { res.status(500).send(`Error updating property: ${error}`) })
   .finally(() => session.close())
@@ -293,8 +314,10 @@ exports.update_password = (req, res) => {
     )
   })
   .then(({records}) => {
-    if(records.length < 1) throw 'User not found'
-    res.send(records[0].get('user'))
+    if(!records.length) throw 'User not found'
+    const user = records[0].get('user')
+    delete user.properties.password_hashed
+    res.send(user)
     console.log(`[Neo4J] Password of user ${user_id} updated`)
    })
   .catch(error => {
@@ -352,8 +375,13 @@ exports.get_users = (req, res) => {
       ids: req.query.ids,
     })
   .then(({records}) => {
-    const users = records.map(record => record.get('user'))
+    const users = records
+      .map(record => record.get('user'))
+
+    users.forEach( user => { delete user.properties.password_hashed })
+
     res.send( users )
+    console.log(`[Neo4j] Users queried`)
   })
   .catch(error => {
     console.error(error)
