@@ -43,12 +43,10 @@ const find_user_in_db = (identifier) => {
 
       // Return user if found
       RETURN user
-      `, {
-        identifier: identifier,
-      })
+      `, { identifier })
     .then(result => {
 
-      if(result.records.length < 1) return reject({code: 400, message: `User ${identifier} not found`})
+      if(!result.records.length) return reject({code: 400, message: `User ${identifier} not found`})
       if(result.records.length > 1) return reject({code: 500, message: `Multiple users found`})
 
       const user = result.records[0].get('user')
@@ -130,7 +128,7 @@ const decode_token = (token) => {
 
       resolve(decoded_token)
 
-      console.log(`[Auth] Token decoded successfully`)
+      //console.log(`[Auth] Token decoded successfully`)
 
     })
   })
@@ -147,7 +145,7 @@ const retrieve_token_from_headers = (req) => {
 
     resolve(token)
 
-    console.log(`[Auth] Token retrieved from headers`)
+    //console.log(`[Auth] Token retrieved from headers`)
 
   })
 }

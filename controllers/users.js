@@ -237,8 +237,8 @@ exports.patch_user = (req, res) => {
   .then( ({records}) => {
 
     if(!records.length) {
-      console.log(`[neo4J] User ${user_id} not found`)
       return res.status(404).send(`User ${user_id} not found`)
+      console.log(`[neo4J] User ${user_id} not found`)
     }
 
     const user = records[0].get('user')
