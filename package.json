@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@moreillon/express_identification_middleware": "^1.0.3",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "bcrypt": "^4.0.1",
     "cookies": "^0.8.0",
     "cors": "^2.8.5",
