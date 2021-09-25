@@ -2,6 +2,8 @@
 
 A simple user management and authentication service built around a Neo4J database
 
+Project page: https://cms.maximemoreillon.com/articles/585
+
 [![pipeline status](https://gitlab.com/moreillon_k8s/user_manager/badges/master/pipeline.svg)](https://gitlab.com/moreillon_k8s/user_manager/-/commits/master) [![coverage report](https://gitlab.com/moreillon_k8s/user_manager/badges/master/coverage.svg)](https://gitlab.com/moreillon_k8s/user_manager/-/commits/master)
 ## API
 | Route | Method | query/body | Description |

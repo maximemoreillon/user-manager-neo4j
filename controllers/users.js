@@ -375,9 +375,8 @@ exports.get_users = (req, res) => {
       ids: req.query.ids,
     })
   .then(({records}) => {
-    const users = records
-      .map(record => record.get('user'))
 
+    const users = records.map(record => record.get('user'))
     users.forEach( user => { delete user.properties.password_hashed })
 
     res.send( users )
