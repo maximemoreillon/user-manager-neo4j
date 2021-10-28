@@ -107,8 +107,8 @@ exports.create_user = async (req, res) => {
 
     const {username, password} = req.body
 
-    if(!username) throw {code: 403, message: `Username not defined`, tag: 'Express'}
-    if(!password) throw {code: 403, message: `Password not defined`, tag: 'Express'}
+    if(!username) throw {code: 400, message: `Username not defined`, tag: 'Express'}
+    if(!password) throw {code: 400, message: `Password not defined`, tag: 'Express'}
 
     const password_hashed = await hash_password(password)
 
