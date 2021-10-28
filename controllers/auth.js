@@ -1,138 +1,91 @@
 const driver = require('../neo4j_driver.js')
-const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const dotenv = require('dotenv')
+
+const {
+  error_handling,
+  compare_password,
+} = require('../utils.js')
+
+const {find_user_in_db} = require('./users.js')
 
 dotenv.config()
 
 
-const register_last_login = (user_id) => {
-  const field_name = 'user'
-  let session = driver.session()
-  session
-  .run(`
-    MATCH (${field_name}:User)
-    WHERE id(${field_name}) = toInteger($user_id)
+const register_last_login = async (user_id) => {
 
-    SET ${field_name}.last_login = date()
+  // This did not need to be async await
 
-    // Return user if found
-    RETURN ${field_name}
-    `, {
-      user_id: user_id,
-    })
-  .then(() => { console.log(`[Auth] Successfully registered last login for user ${user_id}`) })
-  .catch((error) => { console.log(`[Auth] Error setting last login: ${error}`) })
-  .finally( () => { session.close() })
+  const session = driver.session()
 
-}
-
-const find_user_in_db = (identifier) => {
-
-  return new Promise ( (resolve, reject) => {
-
-    const session = driver.session()
-    session
-    .run(`
+  try {
+    const query = `
       MATCH (user:User)
+      WHERE id(user) = toInteger($user_id)
 
-      // Allow user to identify using either userrname or email address
-      WHERE user.username=$identifier
-        OR user.email_address=$identifier
-        OR id(user) = toInteger($identifier)
+      SET user.last_login = date()
 
       // Return user if found
       RETURN user
-      `, { identifier })
-    .then(result => {
+      `
 
-      if(!result.records.length) return reject({code: 400, message: `User ${identifier} not found`})
-      if(result.records.length > 1) return reject({code: 500, message: `Multiple users found`})
+    await session.run(query, {user_id})
+    console.log(`[Auth] Successfully registered last login for user ${user_id}`)
+  }
+  catch (error) {
+    throw error
+  }
+  finally {
+    session.close()
+  }
 
-      const user = result.records[0].get('user')
 
-      if(user.properties.locked) return reject({code: 500, message: `User account ${user.identity} is locked`})
-
-      resolve(user)
-
-      console.log(`[Neo4J] User ${user.identity} found in the DB`)
-
-    })
-    .catch(error => { reject({code: 500, message:error}) })
-    .finally( () => session.close())
-
-  })
 }
 
-const check_password = (password_plain, user) => {
-  return new Promise ( (resolve, reject) => {
 
-    // Retrieve hashed password from user properties
-    const password_hashed = user.properties.password_hashed
 
-    // check if the user has a password
-    if(!password_hashed) return reject({code: 500, message: `User ${user.identity} does not have a password`})
 
-    bcrypt.compare(password_plain, password_hashed, (error, password_correct) => {
 
-      // Handle check errors
-      if(error) return reject({code: 500, message: error})
 
-      // Handle incoree
-      if(!password_correct) return reject({code: 403, message: `Incorrect password`})
+const generate_token = (user) => new Promise( (resolve, reject) => {
 
-      resolve(user)
+  const JWT_SECRET = process.env.JWT_SECRET
 
-      console.log(`[Auth] Password correct for user ${user.identity}`)
+  // Check if the secret is set
+  if(!JWT_SECRET) return reject({code: 500, message: `Token secret not set`})
 
-    })
+  const token_content = { user_id: user.identity }
+
+  jwt.sign(token_content, JWT_SECRET, (error, token) => {
+
+    // handle signing errors
+    if(error) return reject({code: 500, message: error})
+
+    // Resolve with token
+    resolve(token)
+
+    console.log(`[Auth] Token generated for user ${user.identity}`)
 
   })
-}
+})
 
-const generate_token = (user) => {
-  return new Promise( (resolve, reject) => {
+const decode_token = (token) => new Promise ( (resolve, reject) => {
 
-    const JWT_SECRET = process.env.JWT_SECRET
+  const JWT_SECRET = process.env.JWT_SECRET
 
-    // Check if the secret is set
-    if(!JWT_SECRET) return reject({code: 500, message: `Token secret not set`})
+  // Check if the secret is set
+  if(!JWT_SECRET) return reject({code: 500, message: `Token secret not set`})
 
-    const token_content = { user_id: user.identity }
+  jwt.verify(token, JWT_SECRET, (error, decoded_token) => {
 
-    jwt.sign(token_content, JWT_SECRET, (error, token) => {
+    if(error) return reject({code: 403, message: `Invalid JWT`})
 
-      // handle signing errors
-      if(error) return reject({code: 500, message: error})
+    resolve(decoded_token)
 
-      // Resolve with token
-      resolve(token)
+    //console.log(`[Auth] Token decoded successfully`)
 
-      console.log(`[Auth] Token generated for user ${user.identity}`)
-
-    })
   })
-}
-
-const decode_token = (token) => {
-  return new Promise ( (resolve, reject) => {
-
-    const JWT_SECRET = process.env.JWT_SECRET
-
-    // Check if the secret is set
-    if(!JWT_SECRET) return reject({code: 500, message: `Token secret not set`})
-
-    jwt.verify(token, JWT_SECRET, (error, decoded_token) => {
-
-      if(error) return reject({code: 403, message: `Invalid JWT`})
-
-      resolve(decoded_token)
-
-      //console.log(`[Auth] Token decoded successfully`)
-
-    })
-  })
-}
+})
 
 const retrieve_token_from_headers = (req) => {
   return new Promise ( (resolve, reject) => {
@@ -150,46 +103,59 @@ const retrieve_token_from_headers = (req) => {
   })
 }
 
-exports.middleware = (req, res, next) => {
-  retrieve_token_from_headers(req, res)
-   .then(decode_token)
-   .then( ({user_id}) => find_user_in_db(user_id) )
-   .then( user => {
-     res.locals.user = user
-     next()
-   })
-   .catch( error => {
+exports.middleware = async (req, res, next) => {
+
+  try {
+    const token = await retrieve_token_from_headers(req, res)
+    const {user_id} = await decode_token(token)
+    const user = await find_user_in_db(user_id)
+    res.locals.user = user
+    next()
+  }
+  catch (error) {
     console.log(error)
     res.status(403).send(error)
-  })
+  }
+
 }
 
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
 
-  // Input sanitation
-  const identifier = req.body.username
-    || req.body.email_address
-    || req.body.email
-    || req.body.identifier
+  try {
 
-  const password = req.body.password
+    // Input management
+    const identifier = req.body.username
+      || req.body.email_address
+      || req.body.email
+      || req.body.identifier
 
-  if(!identifier) return res.status(400).send(`Missing username or e-mail address`)
-  if(!password) return res.status(400).send(`Missing password`)
+    const password = req.body.password
 
-  console.log(`[Auth] Login attempt from user identified as ${identifier}`)
+    if(!identifier) throw {code: 400, message: `Missing username or e-mail address`}
+    if(!password) throw {code: 400, message: `Missing password`}
 
-  find_user_in_db(identifier)
-  .then( user => { return check_password(password, user) })
-  .then( user => {
-    // Save the last login time of the user
-    register_last_login(user.identity)
+    console.log(`[Auth] Login attempt from user identified as ${identifier}`)
 
-    return generate_token(user)
-  })
-  .then( token => { res.send({jwt: token}) })
-  .catch(error => {
-    console.log(error.message || error)
-    res.status(error.code || 500).send(error.message || error)
-  })
+    // User query
+    const user = await find_user_in_db(identifier)
+
+    // Lock check
+    if(user.properties.locked) throw {code: 403, message: `This account is locked`}
+
+    // Password check
+    const password_correct = await compare_password(password, user.properties.password_hashed)
+    if(!password_correct) throw {code: 403, message: `Incorrect password`}
+
+    await register_last_login(user.identity)
+
+    const jwt = await generate_token(user)
+
+    res.send({jwt})
+
+    console.log(`[Auth] Successful login from user identified as ${identifier}`)
+  }
+  catch (error) {
+    error_handling(error, res)
+  }
+
 }

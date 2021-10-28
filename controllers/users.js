@@ -1,7 +1,10 @@
 const driver = require('../neo4j_driver.js')
-const bcrypt = require('bcrypt')
 const dotenv = require('dotenv')
-const { error_handling } = require('../utils.js')
+const {
+  error_handling,
+  compare_password,
+  hash_password,
+} = require('../utils.js')
 
 // Dotenv might not be necessary here
 dotenv.config()
@@ -38,61 +41,50 @@ function get_user_id_from_query_or_own(req, res){
   return user_id
 }
 
-function hash_password(password_plain) {
-  return new Promise ( (resolve, reject) => {
-    bcrypt.hash(password_plain, 10, (error, password_hashed) => {
-      if(error) return reject({code: 500, message: error})
-      resolve(password_hashed)
-      console.log(`[Bcrypt] Password hashed`)
-    })
-  })
-}
+const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
+  // This would maybe be better without throwing errors when user not found
+  const session = driver.session()
+  session.run(`
+    MATCH (user:User)
 
-function compare_password(password_plain, password_hashed){
-  return new Promise( (resolve, reject) => {
-    bcrypt.compare(password_plain, password_hashed, (error, result) => {
-      if(error) return reject(error)
-      resolve(result)
-    })
-  })
-}
+    // Allow user to identify using either userrname or email address
+    WHERE user.username=$identifier
+      OR user.email_address=$identifier
+      OR id(user) = toInteger($identifier)
 
+    // Return user if found
+    RETURN user
+    `, { identifier })
+  .then(result => {
+
+    if(!result.records.length) return reject({code: 400, message: `User ${identifier} not found`, tag: 'Neo4J'})
+    if(result.records.length > 1) return reject({code: 500, message: `Multiple users found`, tag: 'Neo4J'})
+
+    const user = result.records[0].get('user')
+
+    resolve(user)
+
+    console.log(`[Neo4J] User ${user.identity} found in the DB`)
+
+  })
+  .catch(error => { reject({code: 500, message:error}) })
+  .finally( () => session.close())
+
+})
 
 
 exports.get_user = async (req, res) => {
 
-  const session = driver.session()
-
   try {
-
-    const query =`
-      MATCH (user:User)
-      WHERE id(user) = toInteger($user_id)
-      RETURN user
-      `
-
     const user_id = get_user_id_from_query_or_own(req, res)
-
-    const {records} = await session.run(query,{user_id})
-
-    if(!records.length) throw {code: 404, message: `User ${user_id} not found`}
-
-    // Should return only one user since IDs are unique
-    const user = records[0].get('user')
+    const user = await find_user_in_db(user_id)
     delete user.properties.password_hashed
-
     res.send(user)
     console.log(`[Neo4J] USer ${user_id} queried`)
-
   }
   catch (error) {
     error_handling(error, res)
   }
-  finally {
-    session.close()
-  }
-
-
 }
 
 exports.create_user = async (req, res) => {
@@ -482,3 +474,5 @@ exports.delete_all_users = () => {
   .finally( () => session.close())
 
 }
+
+exports.find_user_in_db = find_user_in_db
