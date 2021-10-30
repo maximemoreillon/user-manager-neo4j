@@ -28,7 +28,6 @@ app.get('/', (req, res) => {
     version,
     neo4j_url: process.env.NEO4J_URL || 'UNDEFINED',
     authentication_api_url: process.env.AUTHENTICATION_API_URL || 'UNDEFINED',
-    commit_sha: process.env.CI_COMMIT_SHA
   })
 })
 
