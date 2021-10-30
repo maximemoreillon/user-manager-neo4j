@@ -40,7 +40,7 @@ containerization:
     # Docker hub login
     - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
     # Building
-    - docker build -t ${CONTAINER_IMAGE} .
+    - docker build -t ${CONTAINER_IMAGE} --build-arg CI_COMMIT_SHA=${CI_COMMIT_SHA} .
     # Tagging
     - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_TAGGED}
     # Pushing
