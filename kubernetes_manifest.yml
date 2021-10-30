@@ -14,9 +14,8 @@ spec:
     spec:
       containers:
       - name: ${APPLICATION_NAME}
-        image: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}
-        # Ensures that k8s pulls a new image on restart
-        imagePullPolicy: Always
+        image: ${DOCKER_IMAGE}
+        #imagePullPolicy: Always
         ports:
         - containerPort: 80
         # Get environment variables from k8s
