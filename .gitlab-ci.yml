@@ -6,7 +6,7 @@ stages:
 variables:
   APPLICATION_NAME: user-manager
   CONTAINER_IMAGE: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}
-  CONTAINER_IMAGE_TAGGED: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}:${CI_COMMIT_SHA}
+  CONTAINER_IMAGE_TAGGED: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}:${CI_COMMIT_SHORT_SHA}
   CONTAINER_IMAGE_TEST: ${APPLICATION_NAME}-test
   CERTIFICATE_DOMAIN: api.users.maximemoreillon.com
 
@@ -40,7 +40,7 @@ containerization:
     # Docker hub login
     - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
     # Building
-    - docker build -t ${CONTAINER_IMAGE} --build-arg CI_COMMIT_SHA=${CI_COMMIT_SHA} .
+    - docker build -t ${CONTAINER_IMAGE} .
     # Tagging
     - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_TAGGED}
     # Pushing
