@@ -10,20 +10,6 @@ exports.error_handling = (error, res) => {
 
 }
 
-exports.compare_password = (password_plain, password_hashed) => new Promise( (resolve, reject) => {
-  bcrypt.compare(password_plain, password_hashed, (error, result) => {
-    if(error) return reject(error)
-    resolve(result)
-  })
-})
-
-// Those are auth functions
-exports.hash_password = (password_plain) => {
-  return new Promise ( (resolve, reject) => {
-    bcrypt.hash(password_plain, 10, (error, password_hashed) => {
-      if(error) return reject({code: 500, message: error})
-      resolve(password_hashed)
-      //console.log(`[Bcrypt] Password hashed`)
-    })
-  })
-}
+// Auth related
+exports.compare_password = (password_plain, password_hashed) => bcrypt.compare(password_plain, password_hashed)
+exports.hash_password = (password_plain) => bcrypt.hash(password_plain, 10)
