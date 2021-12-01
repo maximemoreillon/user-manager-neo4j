@@ -42,14 +42,14 @@ test:
       -d
       --rm
       --name ${TEST_DB}
-      -e NEO4J_AUTH=${TEST_DB_USERNAME}/${TEST_DB_PASSWORD}
       --network ${TEST_NETWORK}
       --hostname ${TEST_DB}
-      neo4j
+      -e NEO4J_AUTH=${TEST_DB_USERNAME}/${TEST_DB_PASSWORD}
+      neo4j:3.5-community
   script:
     # Run test
     - docker build -t ${APPLICATION_NAME} .
-    - sleep 300 # Wait for Neo4J to become available
+    - sleep 60 # Wait for Neo4J to become available
     - >
       docker run
       --rm
