@@ -59,7 +59,7 @@ test:
       -e NEO4J_USERNAME=${TEST_DB_USERNAME}
       -e NEO4J_PASSWORD=${TEST_DB_PASSWORD}
       -e JWT_SECRET=keyboardcat
-      ${APPLICATION_NAME}
+      ${CONTAINER_IMAGE_TEST}
       npm run coverage
 
 
