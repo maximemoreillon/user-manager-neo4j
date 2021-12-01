@@ -1,62 +1,74 @@
 stages:
+  - build
   - test
-  - containerization
-  - deploy
+  # - deploy
 
 variables:
   APPLICATION_NAME: user-manager
   CONTAINER_IMAGE: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}
+  CONTAINER_IMAGE_TEST: ${CONTAINER_IMAGE}:test
   CONTAINER_IMAGE_TAGGED: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}:${CI_COMMIT_SHORT_SHA}
-  CONTAINER_IMAGE_TEST: ${APPLICATION_NAME}-test
-  CERTIFICATE_DOMAIN: api.users.maximemoreillon.com
+  TEST_NETWORK: tdd
+  TEST_DB: tdd-db
+  TEST_DB_USERNAME: neo4j
+  TEST_DB_PASSWORD: neo4j
+  K8S_INGRESS_DOMAIN: api.users.maximemoreillon.com
 
+# Needed for Docker in docker build
+services:
+  - name: docker:19.03.12-dind
+
+build:
+  stage: build
+  tags:
+    - dind
+  before_script:
+    # Docker hub login
+    - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
+  script:
+    - docker build -t ${CONTAINER_IMAGE_TEST} .
+    - docker push ${CONTAINER_IMAGE_TEST}
+    - docker image rm ${CONTAINER_IMAGE_TAGGED}
 
 test:
   stage: test
   tags:
-    - testing
+    - dind
+  before_script:
+    # Creating network for TDD
+    - docker network create ${TEST_NETWORK}
+    # Creating DB container in network
+    - >
+      docker run --rm -d
+      --name ${TEST_DB}
+      -e NEO4J_AUTH=${TEST_DB_USERNAME}/${TEST_DB_PASSWORD}
+      --network ${TEST_NETWORK}
+      --hostname ${TEST_DB}
+      mongo
   script:
     # Run test
-    - docker build -t ${CONTAINER_IMAGE_TEST} .
     - >
       docker run
       --rm
-      --name user-manager-neo4j-tdd
-      -e NEO4J_URL=bolt://192.168.1.2:7687
-      -e NEO4J_USERNAME=${TEST_NEO4J_USERNAME}
-      -e NEO4J_PASSWORD=${TEST_NEO4J_PASSWORD}
+      --name tdd-app
+      -e NEO4J_URL=bolt://${TEST_DB}:7687
+      -e NEO4J_USERNAME=${TEST_DB_USERNAME}
+      -e NEO4J_PASSWORD=${TEST_DB_PASSWORD}
       -e JWT_SECRET=keyboardcat
       ${APPLICATION_NAME}
       npm run coverage
-    # Cleanup
-    - docker image rm ${CONTAINER_IMAGE_TEST}
 
 
-containerization:
-  stage: containerization
-  tags:
-    - moreillon
-  script:
-    # Docker hub login
-    - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
-    # Building
-    - docker build -t ${CONTAINER_IMAGE} .
-    # Tagging
-    - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_TAGGED}
-    # Pushing
-    - docker push ${CONTAINER_IMAGE}
-    - docker push ${CONTAINER_IMAGE_TAGGED}
-    # cleanup
-    - docker image rm ${CONTAINER_IMAGE}
-    - docker image rm ${CONTAINER_IMAGE_TAGGED}
 
-deployment:
-  stage: deploy
-  tags:
-    - moreillon
-  script:
-    - envsubst < kubernetes_manifest.yml | kubectl apply -f -
-  environment:
-    name: production
-    kubernetes:
-      namespace: ${KUBERNETES_NAMESPACE}
+
+
+# deployment:
+#   stage: deploy
+#   tags:
+#     - moreillon
+#   script:
+#     - envsubst < kubernetes_manifest.yml | kubectl apply -f -
+#   environment:
+#     name: production
+#     kubernetes:
+#       namespace: ${KUBERNETES_NAMESPACE}

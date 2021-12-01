@@ -22,9 +22,6 @@ spec:
         envFrom:
         - secretRef:
            name: environment-variables
-      # Credentials to pull image from registry
-      imagePullSecrets:
-      - name: registry-credentials
 ---
 apiVersion: v1
 kind: Service
@@ -47,10 +44,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - ${CERTIFICATE_DOMAIN}
+    - ${K8S_INGRESS_DOMAIN}
     secretName: ${APPLICATION_NAME} # Name of the secret, i.e. the certificates
   rules:
-  - host: ${CERTIFICATE_DOMAIN}
+  - host: ${K8S_INGRESS_DOMAIN}
     http:
       paths:
       - path: /
