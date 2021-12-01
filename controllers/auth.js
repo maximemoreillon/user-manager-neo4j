@@ -123,13 +123,15 @@ exports.login = async (req, res) => {
 
   try {
 
+    console.log(req.body)
+
     // Input management
     const identifier = req.body.username
       || req.body.email_address
       || req.body.email
       || req.body.identifier
 
-    const password = req.body.password
+    const {password} = req.body
 
     if(!identifier) throw {code: 400, message: `Missing username or e-mail address`}
     if(!password) throw {code: 400, message: `Missing password`}

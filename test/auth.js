@@ -8,7 +8,7 @@ const user_controller = require('../controllers/users.js')
 describe("/auth", () => {
 
   beforeEach( async () => {
-    console.log = function () {};
+    //console.log = function () {}
     await user_controller.create_admin_if_not_exists()
   })
 

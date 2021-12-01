@@ -63,9 +63,6 @@ const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
     const user = result.records[0].get('user')
 
     resolve(user)
-
-    console.log(`[Neo4J] User ${user.identity} found in the DB`)
-
   })
   .catch(error => { reject({code: 500, message:error}) })
   .finally( () => session.close())
