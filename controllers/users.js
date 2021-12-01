@@ -451,6 +451,7 @@ exports.create_admin_if_not_exists = async () => {
     else console.log(`[Neo4J] Administrator already existed`)
   })
   .catch(error => {
+    // Retry admin creation later if Neo$j was not available
     if(error.code === 'ServiceUnavailable') {
       console.log(`[Neo4J] Neo4J unavailable, retrying in 10 seconds`)
       setTimeout(exports.create_admin_if_not_exists, 10000)

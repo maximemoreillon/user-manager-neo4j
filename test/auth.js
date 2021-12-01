@@ -1,6 +1,6 @@
 const request = require("supertest")
 const expect = require("chai").expect
-const app = require("../server.js").app
+const {app} = require("../server.js")
 const user_controller = require('../controllers/users.js')
 
 
@@ -9,7 +9,7 @@ describe("/auth", () => {
 
   beforeEach( async () => {
     //console.log = function () {}
-    await user_controller.create_admin_if_not_exists()
+    //await user_controller.create_admin_if_not_exists()
   })
 
 
