@@ -9,7 +9,7 @@ describe("/auth", () => {
 
   beforeEach( async () => {
     //console.log = function () {}
-    //await user_controller.create_admin_if_not_exists()
+    await user_controller.create_admin_if_not_exists()
   })
 
 

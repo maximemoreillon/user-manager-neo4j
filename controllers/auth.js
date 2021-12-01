@@ -123,8 +123,6 @@ exports.login = async (req, res) => {
 
   try {
 
-    console.log(req.body)
-
     // Input management
     const identifier = req.body.username
       || req.body.email_address
