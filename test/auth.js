@@ -18,12 +18,11 @@ describe("/auth", () => {
 
     // What should it do
     it("Should return 200", async () => {
-      const res = await request(app)
+      const {status} = await request(app)
         .post("/auth/login")
         .send({username: 'admin', password: 'admin'})
-        .expect('Content-Type', /json/)
 
-      expect(res.status).to.equal(200)
+      expect(status).to.equal(200)
     })
   })
 
