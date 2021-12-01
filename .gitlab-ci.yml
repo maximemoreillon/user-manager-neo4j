@@ -49,7 +49,7 @@ test:
   script:
     # Run test
     - docker build -t ${APPLICATION_NAME} .
-    - sleep 60 # Wait for Neo4J to become available
+    - sleep 120 # Wait for Neo4J to become available
     - >
       docker run
       --rm
