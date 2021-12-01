@@ -1,5 +1,5 @@
 stages:
-  - build
+  # - build
   - test
   # - deploy
 
@@ -18,16 +18,16 @@ variables:
 services:
   - name: docker:19.03.12-dind
 
-build:
-  stage: build
-  tags:
-    - dind
-  before_script:
-    # Docker hub login
-    - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
-  script:
-    - docker build -t ${CONTAINER_IMAGE_TEST} .
-    - docker push ${CONTAINER_IMAGE_TEST}
+# build:
+#   stage: build
+#   tags:
+#     - dind
+#   before_script:
+#     # Docker hub login
+#     - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
+#   script:
+#     - docker build -t ${CONTAINER_IMAGE_TEST} .
+#     - docker push ${CONTAINER_IMAGE_TEST}
 
 test:
   stage: test
@@ -43,7 +43,7 @@ test:
       -e NEO4J_AUTH=${TEST_DB_USERNAME}/${TEST_DB_PASSWORD}
       --network ${TEST_NETWORK}
       --hostname ${TEST_DB}
-      mongo
+      neo4j
   script:
     # Run test
     - >
