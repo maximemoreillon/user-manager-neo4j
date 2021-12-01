@@ -46,6 +46,7 @@ test:
       neo4j
   script:
     # Run test
+    - docker build -t ${APPLICATION_NAME} .
     - >
       docker run
       --rm
@@ -54,7 +55,7 @@ test:
       -e NEO4J_USERNAME=${TEST_DB_USERNAME}
       -e NEO4J_PASSWORD=${TEST_DB_PASSWORD}
       -e JWT_SECRET=keyboardcat
-      ${CONTAINER_IMAGE_TEST}
+      ${APPLICATION_NAME}
       npm run coverage
 
 
