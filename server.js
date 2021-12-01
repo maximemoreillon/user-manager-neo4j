@@ -15,6 +15,7 @@ console.log(`== User manager (Neo4J) v${version} ==`)
 // Port configuration
 const APP_PORT = process.env.APP_PORT || 80
 
+console.log(process.env)
 
 // Express configuration
 const app = express()
