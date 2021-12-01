@@ -38,7 +38,9 @@ test:
     - docker network create ${TEST_NETWORK}
     # Creating DB container in network
     - >
-      docker run --rm -d
+      docker run
+      -d
+      --rm
       --name ${TEST_DB}
       -e NEO4J_AUTH=${TEST_DB_USERNAME}/${TEST_DB_PASSWORD}
       --network ${TEST_NETWORK}
@@ -51,6 +53,7 @@ test:
       docker run
       --rm
       --name tdd-app
+      --network ${TEST_NETWORK}
       -e NEO4J_URL=bolt://${TEST_DB}:7687
       -e NEO4J_USERNAME=${TEST_DB_USERNAME}
       -e NEO4J_PASSWORD=${TEST_DB_PASSWORD}
