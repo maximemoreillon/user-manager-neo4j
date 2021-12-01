@@ -46,7 +46,7 @@ test:
       --hostname ${TEST_DB}
       --env NEO4J_AUTH=none
       neo4j:3.5-community
-    - sleep 60 # Wait for Neo4J to become available
+    - sleep 100 # Wait for Neo4J to become available
   script:
     # Run test
 

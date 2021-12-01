@@ -13,7 +13,10 @@ dotenv.config()
 
 console.log(`== User manager (Neo4J) v${version} ==`)
 // Port configuration
-const {APP_PORT = 80} = process.env
+const {
+  APP_PORT = 80,
+  NEO4J_URL = 'UNDEFINED'
+} = process.env
 
 // Express configuration
 const app = express()
@@ -22,11 +25,10 @@ app.use(cors())
 
 app.get('/', (req, res) => {
   res.send({
-    application_name: 'User manager API',
+    application_name: 'User manager (Neo4J version)',
     author,
     version,
-    neo4j_url: process.env.NEO4J_URL || 'UNDEFINED',
-    authentication_api_url: process.env.AUTHENTICATION_API_URL || 'UNDEFINED',
+    neo4j_url: NEO4J_URL,
   })
 })
 

@@ -403,12 +403,14 @@ exports.get_users = async (req, res) => {
 
 }
 
-exports.create_admin_if_not_exists = () => {
+exports.create_admin_if_not_exists = async () => {
 
   console.log(`[Neo4J] Creating admin account...`)
 
-  const default_admin_password = process.env.ADMIN_PASSWORD || 'admin'
-  const default_admin_username = process.env.ADMIN_USERNAME || 'admin'
+  const {
+    ADMIN_USERNAME: default_admin_username = 'admin',
+    ADMIN_PASSWORD: default_admin_password = 'admin',
+  } = process.env
 
   const session = driver.session()
 
