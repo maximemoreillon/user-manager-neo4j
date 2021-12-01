@@ -17,12 +17,20 @@ describe("/auth", () => {
   describe("POST /login", () => {
 
     // What should it do
-    it("Should return 200", async () => {
+    it("Should allow admin login", async () => {
       const {status} = await request(app)
         .post("/auth/login")
         .send({username: 'admin', password: 'admin'})
 
       expect(status).to.equal(200)
+    })
+
+    it("Should not allow random user login", async () => {
+      const {status} = await request(app)
+        .post("/auth/login")
+        .send({username: 'roger', password: 'banana'})
+
+      expect(status).to.not.equal(200)
     })
   })
 

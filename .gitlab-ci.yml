@@ -1,5 +1,5 @@
 stages:
-  # - build
+  - build
   - test
   # - deploy
 
@@ -18,16 +18,16 @@ variables:
 services:
   - name: docker:19.03.12-dind
 
-# build:
-#   stage: build
-#   tags:
-#     - dind
-#   before_script:
-#     # Docker hub login
-#     - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
-#   script:
-#     - docker build -t ${CONTAINER_IMAGE_TEST} .
-#     - docker push ${CONTAINER_IMAGE_TEST}
+build:
+  stage: build
+  tags:
+    - dind
+  before_script:
+    # Docker hub login
+    - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
+  script:
+    - docker build -t ${CONTAINER_IMAGE_TEST} .
+    - docker push ${CONTAINER_IMAGE_TEST}
 
 test:
   stage: test
@@ -46,10 +46,10 @@ test:
       --hostname ${TEST_DB}
       --env NEO4J_AUTH=none
       neo4j:3.5-community
+    - sleep 60 # Wait for Neo4J to become available
   script:
     # Run test
-    - docker build -t ${APPLICATION_NAME} .
-    - sleep 120 # Wait for Neo4J to become available
+
     - >
       docker run
       --rm
