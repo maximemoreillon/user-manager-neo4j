@@ -28,7 +28,6 @@ build:
   script:
     - docker build -t ${CONTAINER_IMAGE_TEST} .
     - docker push ${CONTAINER_IMAGE_TEST}
-    - docker image rm ${CONTAINER_IMAGE_TAGGED}
 
 test:
   stage: test
