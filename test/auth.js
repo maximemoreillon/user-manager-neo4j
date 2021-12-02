@@ -4,11 +4,14 @@ const {app} = require("../server.js")
 const user_controller = require('../controllers/users.js')
 
 
+const sleep = (delay) => new Promise(resolve => setTimeout(resolve,delay))
+
 // We will test for api users
 describe("/auth", () => {
 
   beforeEach( async () => {
     //console.log = function () {}
+    await sleep(10000)
     //await user_controller.create_admin_if_not_exists()
   })
 
