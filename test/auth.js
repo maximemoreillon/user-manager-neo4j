@@ -11,7 +11,7 @@ describe("/auth", () => {
 
   beforeEach( async () => {
     //console.log = function () {}
-    await sleep(10000)
+    await sleep(5000)
     //await user_controller.create_admin_if_not_exists()
   })
 
