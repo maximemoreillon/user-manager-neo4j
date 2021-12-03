@@ -7,7 +7,8 @@ variables:
   APPLICATION_NAME: user-manager
   CONTAINER_IMAGE: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}
   CONTAINER_IMAGE_TEST: ${CONTAINER_IMAGE}:test
-  CONTAINER_IMAGE_TAGGED: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}:${CI_COMMIT_SHORT_SHA}
+  CONTAINER_IMAGE_LATEST: ${CONTAINER_IMAGE}:latest
+  CONTAINER_IMAGE_TAGGED: ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}
   TEST_NETWORK: tdd
   TEST_DB: tdd-db
   TEST_DB_USERNAME: neo4j
@@ -48,8 +49,7 @@ test:
       neo4j:3.5-community
     - sleep 100 # Wait for Neo4J to become available
   script:
-    # Run test
-
+    # Run tests
     - >
       docker run
       --rm
@@ -61,6 +61,12 @@ test:
       -e JWT_SECRET=keyboardcat
       ${CONTAINER_IMAGE_TEST}
       npm run coverage
+    # Tagging
+    - docker tag ${CONTAINER_IMAGE_TEST} ${CONTAINER_IMAGE_TAGGED}
+    - docker tag ${CONTAINER_IMAGE_TEST} ${CONTAINER_IMAGE_LATEST}
+    # Pushing
+    - docker push ${CONTAINER_IMAGE_TAGGED}
+    - docker push ${CONTAINER_IMAGE_LATEST}
 
 
 
