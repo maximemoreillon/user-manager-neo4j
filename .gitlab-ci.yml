@@ -35,6 +35,7 @@ test:
   tags:
     - dind
   before_script:
+    - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
     # Creating network for TDD
     - docker network create ${TEST_NETWORK}
     # Creating DB container in network
