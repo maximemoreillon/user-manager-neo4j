@@ -1,7 +1,7 @@
 stages:
   - build
   - test
-  # - deploy
+  - deploy
 
 variables:
   APPLICATION_NAME: user-manager
@@ -70,16 +70,13 @@ test:
     - docker push ${CONTAINER_IMAGE_LATEST}
 
 
-
-
-
-# deployment:
-#   stage: deploy
-#   tags:
-#     - moreillon
-#   script:
-#     - envsubst < kubernetes_manifest.yml | kubectl apply -f -
-#   environment:
-#     name: production
-#     kubernetes:
-#       namespace: ${KUBERNETES_NAMESPACE}
+deploy:
+  stage: deploy
+  tags:
+    - moreillon
+  script:
+    - envsubst < kubernetes_manifest.yml | kubectl apply -f -
+  environment:
+    name: production
+    kubernetes:
+      namespace: ${KUBERNETES_NAMESPACE}
