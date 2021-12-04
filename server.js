@@ -4,10 +4,11 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const {version, author} = require('./package.json')
-const {url: neo4j_url} = require('./db.js')
+const {url: neo4j_url, get_connected} = require('./db.js')
 const auth_router = require('./routes/auth.js')
 const users_router = require('./routes/users.js')
 const controller = require('./controllers/users.js')
+const {commit} = require('./commit.json')
 
 dotenv.config()
 
@@ -28,7 +29,11 @@ app.get('/', (req, res) => {
     application_name: 'User manager (Neo4J version)',
     author,
     version,
-    neo4j_url,
+    commit,
+    neo4j: {
+      url: neo4j_url,
+      connected: get_connected(),
+    },
   })
 })
 
