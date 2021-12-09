@@ -1,20 +1,22 @@
-const {driver} = require('../db.js')
+const {driver} = require('../../db.js')
 const jwt = require('jsonwebtoken')
 const dotenv = require('dotenv')
+const {
+  decode_token,
+  generate_token,
+  error_handling,
+  get_id_of_user,
+  compare_password,
+} = require('../../utils.js')
 
 const {
-  error_handling,
-  compare_password,
-} = require('../utils.js')
-
-const {find_user_in_db} = require('./users.js')
+  find_user_in_db
+} = require('./users.js')
 
 dotenv.config()
 
 
 const register_last_login = async (user_id) => {
-
-  // This did not need to be async await
 
   const session = driver.session()
 
@@ -38,77 +40,33 @@ const register_last_login = async (user_id) => {
   finally {
     session.close()
   }
-
-
 }
 
 
+const retrieve_jwt = (req, res) => new Promise( (resolve, reject) => {
 
+  // Did not have to be a promise
 
+  const jwt = req.headers.authorization?.split(" ")[1]
+    || req.headers.authorization
+    || (new Cookies(req, res)).get('jwt')
+    || (new Cookies(req, res)).get('token')
+    || req.query.jwt
+    || req.query.token
 
+  if(!jwt) return reject(`JWT not provided`)
 
-const generate_token = (user) => new Promise( (resolve, reject) => {
-
-  const JWT_SECRET = process.env.JWT_SECRET
-
-  // Check if the secret is set
-  if(!JWT_SECRET) return reject({code: 500, message: `Token secret not set`})
-
-  const token_content = { user_id: user.identity }
-
-  jwt.sign(token_content, JWT_SECRET, (error, token) => {
-
-    // handle signing errors
-    if(error) return reject({code: 500, message: error})
-
-    // Resolve with token
-    resolve(token)
-
-    console.log(`[Auth] Token generated for user ${user.identity}`)
-
-  })
+  resolve(jwt)
 })
 
-const decode_token = (token) => new Promise ( (resolve, reject) => {
-
-  const JWT_SECRET = process.env.JWT_SECRET
-
-  // Check if the secret is set
-  if(!JWT_SECRET) return reject({code: 500, message: `Token secret not set`})
-
-  jwt.verify(token, JWT_SECRET, (error, decoded_token) => {
-
-    if(error) return reject({code: 403, message: `Invalid JWT`})
-
-    resolve(decoded_token)
-
-    //console.log(`[Auth] Token decoded successfully`)
-
-  })
-})
-
-const retrieve_token_from_headers = (req) => {
-  return new Promise ( (resolve, reject) => {
-
-    // Check if authorization header set
-    if(!req.headers.authorization) return reject({code: 400, message: `Authorization header not set`})
-    // parse the headers to get the token
-    const token = req.headers.authorization.split(" ")[1];
-    if(!token) return reject({code: 400, message: `Token not found in authorization header`})
-
-    resolve(token)
-
-    //console.log(`[Auth] Token retrieved from headers`)
-
-  })
-}
 
 exports.middleware = async (req, res, next) => {
 
   try {
-    const token = await retrieve_token_from_headers(req, res)
+    const token = await retrieve_jwt(req, res)
     const {user_id} = await decode_token(token)
     const user = await find_user_in_db(user_id)
+
     res.locals.user = user
     next()
   }

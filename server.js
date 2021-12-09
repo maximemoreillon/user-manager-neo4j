@@ -4,19 +4,25 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const {version, author} = require('./package.json')
-const {url: neo4j_url, get_connected} = require('./db.js')
-const auth_router = require('./routes/auth.js')
-const users_router = require('./routes/users.js')
-const controller = require('./controllers/users.js')
+const router_v1 = require('./routes/v1/index.js')
+const controller = require('./controllers/v1/users.js')
 const {commit} = require('./commit.json')
+const {
+  url: neo4j_url,
+  get_connected,
+  connection_check: db_connection_check
+} = require('./db.js')
 
 dotenv.config()
 
-console.log(`== User manager (Neo4J) v${version} ==`)
+console.log(`== User manager (Neo4J edition) v${version} ==`)
+
+
+db_connection_check()
+
 // Port configuration
 const {
   APP_PORT = 80,
-  NEO4J_URL = 'UNDEFINED'
 } = process.env
 
 // Express configuration
@@ -37,8 +43,8 @@ app.get('/', (req, res) => {
   })
 })
 
-app.use('/users', users_router)
-app.use('/auth', auth_router)
+app.use('/', router_v1)
+app.use('/v1', router_v1)
 
 // Start server
 app.listen(APP_PORT, () => {

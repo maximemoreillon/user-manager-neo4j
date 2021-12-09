@@ -1,15 +1,22 @@
-const {driver} = require('../db.js')
+const {driver} = require('../../db.js')
 const dotenv = require('dotenv')
+const newUserSchema = require('../../schemas/newUser.js')
+const passwordUpdateSchema = require('../../schemas/passwordUpdate.js')
 const {
+  get_current_user_id,
   error_handling,
   compare_password,
   hash_password,
-} = require('../utils.js')
+  user_query,
+  user_id_filter,
 
-// Dotenv might not be necessary here
+} = require('../../utils.js')
+
 dotenv.config()
 
 function self_only_unless_admin(req, res){
+
+  // This is a bit weird
 
   // Todo: error message if user is not admin and tries to edit another user
 
@@ -19,25 +26,24 @@ function self_only_unless_admin(req, res){
     return req.body.user_id
       ?? req.query.user_id
       ?? req.params.user_id
+      ?? res.locals.user._id // future proofing
+      ?? res.locals.user.properties._id
       ?? res.locals.user.identity.low
       ?? res.locals.user.identity
   }
   else {
-    return res.locals.user.identity.low
+    return res.locals.user._id // future proofing
+      ?? res.locals.user.properties._id
+      ?? res.locals.user.identity.low
       ?? res.locals.user.identity
   }
 
 }
 
-function get_current_user_id(res){
-  return res.locals.user.identity
-}
 
 function get_user_id_from_query_or_own(req, res){
   let {user_id} = req.params
-
   if(user_id === 'self') user_id = get_current_user_id(res)
-
   return user_id
 }
 
@@ -48,9 +54,10 @@ const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
     MATCH (user:User)
 
     // Allow user to identify using either userrname or email address
-    WHERE user.username=$identifier
+    WHERE user.username = $identifier
       OR user.email_address=$identifier
-      OR id(user) = toInteger($identifier)
+      OR user._id = $identifier
+      //OR id(user) = toInteger($identifier) // <= Removed query using identity
 
     // Return user if found
     RETURN user
@@ -94,23 +101,34 @@ exports.create_user = async (req, res) => {
       throw {code: 403, message: `Only administrators can create users`, tag: 'Auth'}
     }
 
-    const {username, password} = req.body
+    const properties = req.body
 
-    if(!username) throw {code: 400, message: `Username not defined`, tag: 'Express'}
-    if(!password) throw {code: 400, message: `Password not defined`, tag: 'Express'}
+    try {
+      await newUserSchema.validateAsync(properties)
+    } catch (error) {
+      throw {code: 400, message: error}
+    }
+
+    const {
+      username,
+      password,
+      email_address,
+    } = properties
+
 
     const password_hashed = await hash_password(password)
 
     const query = `
-      // MERGE the user node
+      // MERGE the user node with username as unique
       MERGE (user:User {username: $username})
 
-      // If the user does not have a password, i.e. does not exist
-      // Prevent further execution
+      // if the user does not have a uuid, it means the user has not been registered
+      // if the user exists, then further execution will be stopped
       WITH user
-      WHERE NOT EXISTS(user.password_hashed)
+      WHERE NOT EXISTS(user._id)
 
       // Set properties
+      SET user._id = randomUUID()
       SET user.password_hashed = $password_hashed
       SET user.display_name = $username
 
@@ -118,18 +136,18 @@ exports.create_user = async (req, res) => {
       RETURN user
       `
 
-    const params = {
-      username,
-      password_hashed
-    }
+    const params = { username, password_hashed }
 
     const {records} = await session.run(query, params)
+
+
+
 
     // No record implies that the user already existed
     if(!records.length) throw {code: 403, message: `User ${username} already exists`, tag: 'Neo4J'}
 
     const user = records[0].get('user')
-    console.log(`[Neo4J] User ${user.properties.username} (ID ${user.identity}) created`)
+    console.log(`[Neo4J] User ${username} created`)
     res.send(user)
 
   }
@@ -148,19 +166,22 @@ exports.delete_user = async (req, res) => {
 
   try {
 
+    const current_user = res.locals.user
+
+
+    // Prevent normal users to create a user
+    // TODO: allow users to delete self
+    if(!current_user.properties.isAdmin){
+      throw {code: 403, message: 'Unauthorized'}
+    }
+
     const user_id = req.params.user_id
     if(user_id === 'self') user_id = get_current_user_id(res)
 
     const query = `
-      // Find the user
-      MATCH (user:User)
-      WHERE id(user) = toInteger($user_id)
-
-      // Delete
+      ${user_query}
       DETACH DELETE user
-
-      // Return something
-      RETURN 'success'
+      RETURN $user_id
       `
 
     const {records} = await session.run(query, { user_id })
@@ -214,8 +235,7 @@ exports.patch_user = async (req, res) => {
     }
 
     const query = `
-      MATCH (user:User)
-      WHERE id(user) = toInteger($user_id)
+      ${user_query}
       SET user += $properties // += implies update of existing properties
       RETURN user
       `
@@ -243,9 +263,6 @@ exports.patch_user = async (req, res) => {
     session.close()
   }
 
-
-
-
 }
 
 exports.update_password = async (req, res) => {
@@ -254,20 +271,18 @@ exports.update_password = async (req, res) => {
 
   try {
 
-    const {new_password, new_password_confirm, current_password} = req.body
 
-    if(!new_password) throw {code: 403, message: `New password not defined`, tag: 'Express'}
-    if(!new_password_confirm) throw {code: 403, message: `New password confirm not defined`, tag: 'Express'}
+    try {
+      await passwordUpdateSchema.validateAsync(req.body)
+    } catch (error) {
+      throw {code: 400, message: error}
+    }
 
-    // TOdo: password confirm check
+    const {new_password, new_password_confirm} = req.body
 
-    // Get current user ID
-    const current_user_id = self_only_unless_admin(req, res)
-
-    // Retrieve user ID
-    let user_id = req.params.user_id
-    if(user_id === 'self') user_id = current_user_id
-
+    // Get current user info
+    const {user_id} = req.params
+    const current_user_id = res.locals.user.properties._id
     const user_is_admin = res.locals.user.properties.isAdmin
 
     // Prevent an user from modifying another's password
@@ -275,35 +290,11 @@ exports.update_password = async (req, res) => {
       return res.status(403).send(`Unauthorized to modify another user's password`)
     }
 
-    // Only allow admins to set password without checking the current password
-    if(!user_is_admin && !current_password) {
-      return res.status(400).send(`Current password missing`)
-    }
-
-    const user_find_query = `
-      // Find the user using ID
-      MATCH (user:User)
-      WHERE id(user) = toInteger($user_id)
-
-      // Return user once done
-      RETURN user.password_hashed as password
-      `
-
-    const {records: user_records} = await session.run(user_find_query, { user_id })
-
-    if(user_records.length < 1) throw {code: 404, message: `User ${user_id} not found`, tag: 'Neo4J'}
-
-    const current_password_hashed = user_records[0].get('password')
-
-    const password_matching = await compare_password(current_password, current_password_hashed)
-    if(!password_matching && !user_is_admin) throw {code: 403, message: `Current password incorrect`, tag: 'Auth'}
 
     const password_hashed = await hash_password(new_password)
 
-    const password_update_query = `
-      // Find the user using ID
-      MATCH (user:User)
-      WHERE id(user) = toInteger($user_id)
+    const query = `
+      ${user_query}
 
       // Set the new password
       SET user.password_hashed = $password_hashed
@@ -313,10 +304,12 @@ exports.update_password = async (req, res) => {
       RETURN user
       `
 
-    const {records: password_update_records} = await session.run(password_update_query, { user_id, password_hashed })
+    const params = { user_id, password_hashed }
 
-    if(!password_update_records.length) throw 'User not found'
-    const user = password_update_records[0].get('user')
+    const {records} = await session.run(query, params)
+
+    if(!records.length) throw 'User not found'
+    const user = records[0].get('user')
     delete user.properties.password_hashed
     console.log(`[Neo4J] Password of user ${user_id} updated`)
     res.send(user)
@@ -363,7 +356,7 @@ exports.get_users = async (req, res) => {
       // Unwinding
       UNWIND $ids as id
       WITH id, user
-      WHERE id(user)=toInteger(id)
+      WHERE user._id = toString(id)
       `
     }
 
@@ -374,6 +367,9 @@ exports.get_users = async (req, res) => {
       ${ids_query}
 
       RETURN DISTINCT user
+
+      // TODO: BATCHING
+
 
       LIMIT 100
       `
@@ -460,19 +456,6 @@ exports.create_admin_if_not_exists = async () => {
     else console.log(error)
   })
   .finally( () => session.close())
-}
-
-exports.delete_all_users = () => {
-  const session = driver.session()
-  const query = `
-    MATCH (user:User)
-    DETACH DELETE user
-    `
-  return session.run(query)
-  .then( () => { console.log(`[Neo4J] all users deleted`) })
-  .catch(error => { console.log(error) })
-  .finally( () => session.close())
-
 }
 
 exports.find_user_in_db = find_user_in_db

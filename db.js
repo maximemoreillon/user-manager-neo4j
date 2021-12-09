@@ -18,8 +18,9 @@ const driver = neo4j.driver( NEO4J_URL, auth, options )
 let connected = false
 const connection_check = async () => {
   try {
+    console.log(`[Neo4J] Connection check...`)
     const session = driver.session()
-    await session.run(`RETURN 'OK'`)
+    await session.run(` RETURN 'OK' `)
     console.log(`[Neo4J] connected`)
     connected = true
   }
@@ -28,8 +29,7 @@ const connection_check = async () => {
   }
 }
 
-connection_check()
-
+exports.connection_check = connection_check
 exports.get_connected = () => connected
 exports.driver = driver
 exports.url = NEO4J_URL
