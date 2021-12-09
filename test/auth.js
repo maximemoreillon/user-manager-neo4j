@@ -15,7 +15,7 @@ const {
 describe("/auth", () => {
 
   beforeEach( async () => {
-    console.log = function () {}
+    //console.log = function () {}
     await sleep(1000) // wait for admin to be created
   })
 

@@ -26,7 +26,7 @@ describe("/users", () => {
 
 
   before( async () => {
-    console.log = function () {}
+    //console.log = function () {}
     await sleep(1000)
     const {status, body} = await request(app)
       .post("/auth/login")
