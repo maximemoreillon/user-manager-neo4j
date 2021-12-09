@@ -295,12 +295,8 @@ exports.update_password = async (req, res) => {
 
     const query = `
       ${user_query}
-
-      // Set the new password
       SET user.password_hashed = $password_hashed
       SEt user.password_changed = true
-
-      // Return user once done
       RETURN user
       `
 
@@ -308,7 +304,8 @@ exports.update_password = async (req, res) => {
 
     const {records} = await session.run(query, params)
 
-    if(!records.length) throw 'User not found'
+    if(!records.length) throw `User ${user_id} not found`
+
     const user = records[0].get('user')
     delete user.properties.password_hashed
     console.log(`[Neo4J] Password of user ${user_id} updated`)
