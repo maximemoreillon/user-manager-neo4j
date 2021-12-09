@@ -3,6 +3,7 @@
 A simple user management and authentication service built around a Neo4J database
 
 Project page: https://cms.maximemoreillon.com/articles/585
+
 Container image on Docker Hub: https://hub.docker.com/repository/docker/moreillon/user-manager
 
 [![pipeline status](https://gitlab.com/moreillon_k8s/user_manager/badges/master/pipeline.svg)](https://gitlab.com/moreillon_k8s/user_manager/-/commits/master)
@@ -18,7 +19,7 @@ Container image on Docker Hub: https://hub.docker.com/repository/docker/moreillo
 | /users/{user_id} | GET | - | Get the user with the given user ID. |
 | /users/{user_id} | DELETE | - | Delete user with the given user ID. |
 | /users/{user_id} | PATCH | new user properties | Update user with the given user ID. |
-| /users/{user_id}/password | PUT | current password, new_password, new_password_confirm | Update the password of user with the given user ID. |
+| /users/{user_id}/password | PUT/PATCH | {new_password, new_password_confirm} | Update the password of user with the given user ID. |
 | /auth/login | POST | username, password | Login, i.e. exchange credentials for a JWT |
 
 Note: To target the user currently logged in, use 'self' as ID

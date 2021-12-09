@@ -16,7 +16,7 @@ dotenv.config()
 
 function self_only_unless_admin(req, res){
 
-  // This is a bit weird
+  // THIS NEEDS A REVIEW
 
   // Todo: error message if user is not admin and tries to edit another user
 
@@ -401,61 +401,53 @@ exports.get_users = async (req, res) => {
 
 exports.create_admin_if_not_exists = async () => {
 
-  console.log(`[Neo4J] Creating admin account...`)
-
-  const {
-    ADMIN_USERNAME: default_admin_username = 'admin',
-    ADMIN_PASSWORD: default_admin_password = 'admin',
-  } = process.env
+  console.log(`[Neo4J] Creating admin account`)
 
   const session = driver.session()
 
-  return hash_password(default_admin_password)
-  .then(default_admin_password_hashed => {
+  try {
+    const {
+      DEFAULT_ADMIN_USERNAME: admin_username = 'admin',
+      DEFAULT_ADMIN_PASSWORD: admin_password = 'admin',
+    } = process.env
+
+
+    const password_hashed = await hash_password(admin_password)
 
     const query = `
-      // Create a dummy node so that the administrator account does not get ID 0
-      MERGE (dummy:DummyNode)
-
       // Find the administrator account or create it if it does not exist
-      MERGE (administrator:User {username: $default_admin_username})
+      MERGE (administrator:User {username:$admin_username})
 
-      // Make the administrator an actual admin
+      // Make the administrator an actual administrator
       SET administrator.isAdmin = true
 
       // Check if the administrator account is missing its password
       // If the administrator account does not have a password (newly created), set it
       WITH administrator
       WHERE NOT EXISTS(administrator.password_hashed)
-      SET administrator.password_hashed = $default_admin_password_hashed
+      SET administrator.password_hashed = $password_hashed
+
+      // Set some additional properties
       SET administrator.display_name = 'Administrator'
+      SET administrator._id = randomUUID() // THIS IS IMPORTANT
 
       // Return the account
-      RETURN 'OK'
+      RETURN administrator
       `
 
-    const params = {
-      default_admin_password_hashed,
-      default_admin_username,
-    }
+    const {records} = await session.run(query, { admin_username, password_hashed })
 
-    return session.run(query, params)
+    if(records.length) console.log(`[Neo4J] Admin creation: admin account created`)
+    else console.log(`[Neo4J] Admin creation: admin already existed`)
 
-  })
-  .then(({records}) => {
-    if(records.length > 0) console.log(`[Neo4J] Administrator account created`)
-    else console.log(`[Neo4J] Administrator already existed`)
-  })
-  .catch(error => {
-    // Retry admin creation later if Neo$j was not available
-    if(error.code === 'ServiceUnavailable') {
-      console.log(`[Neo4J] Neo4J unavailable, retrying in 10 seconds`)
-      setTimeout(exports.create_admin_if_not_exists, 10000)
-    }
 
-    else console.log(error)
-  })
-  .finally( () => session.close())
+
+  } catch (error) {
+    console.log(error)
+
+  } finally {
+    session.close()
+  }
 }
 
 exports.find_user_in_db = find_user_in_db
