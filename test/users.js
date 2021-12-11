@@ -27,7 +27,7 @@ describe("/users", () => {
 
   before( async () => {
     //console.log = function () {}
-    await sleep(1000)
+    await sleep(1000) // wait for admin to be created
     const {status, body} = await request(app)
       .post("/auth/login")
       .send({username: TEST_USERNAME, password: TEST_PASSWORD})
@@ -42,11 +42,12 @@ describe("/users", () => {
     // What should it do
     it("Should return all users", async () => {
 
-      const {status} = await request(app)
+      const {status, body} = await request(app)
         .get("/users")
         .set('Authorization', `Bearer ${jwt}`)
 
       expect(status).to.equal(200)
+      expect(body.length).to.be.above(0)
     })
   })
 
@@ -83,23 +84,23 @@ describe("/users", () => {
     })
   })
 
-  describe("GET /:user_id", () => {
+  describe("GET /users//:user_id", () => {
     // What should it do
 
     it("Should get the new user", async () => {
 
-      const res = await request(app)
+      const {status, body} = await request(app)
         .get(`/users/${new_user_id}`)
         .set('Authorization', `Bearer ${jwt}`)
 
-      expect(res.body.properties.username).to.equal('test_user')
-      expect(res.status).to.equal(200)
+      expect(body.properties.username).to.equal('test_user')
+      expect(status).to.equal(200)
     })
 
     it("Should reject invalid IDs", async () => {
 
       const res = await request(app)
-        .get(`/users/banana`)
+        .get(`/users/jkasdaskljasdklj`)
         .set('Authorization', `Bearer ${jwt}`)
 
       expect(res.status).to.not.equal(200)
@@ -118,6 +119,16 @@ describe("/users", () => {
         .set('Authorization', `Bearer ${jwt}`)
 
       expect(status).to.equal(403)
+    })
+
+    it("Should prevent modification of non-existent user", async () => {
+
+      const {status} = await request(app)
+        .patch(`/users/3453456345`)
+        .send({display_name: 'Test User'})
+        .set('Authorization', `Bearer ${jwt}`)
+
+      expect(status).to.equal(404)
     })
 
     it("Should allow the update of a user", async () => {
@@ -154,6 +165,15 @@ describe("/users", () => {
         .set('Authorization', `Bearer ${jwt}`)
 
       expect(status).to.equal(200)
+    })
+
+    it("Should prevent the deletion of an inexistent user", async () => {
+
+      const {status} = await request(app)
+        .delete(`/users/asdasdasd`)
+        .set('Authorization', `Bearer ${jwt}`)
+
+      expect(status).to.equal(404)
     })
   })
 

@@ -18,8 +18,6 @@ function self_only_unless_admin(req, res){
 
   // THIS NEEDS A REVIEW
 
-  // Todo: error message if user is not admin and tries to edit another user
-
   const current_user_is_admin = !!res.locals.user.properties.isAdmin
 
   if(current_user_is_admin) {
@@ -181,12 +179,12 @@ exports.delete_user = async (req, res) => {
     const query = `
       ${user_query}
       DETACH DELETE user
-      RETURN $user_id
+      RETURN $user_id as user_id
       `
 
     const {records} = await session.run(query, { user_id })
 
-    if(!records.length) throw {code: 403, message: `User ${user_id} deletion failed`, tag: 'Neo4J'}
+    if(!records.length) throw {code: 404, message: `User ${user_id} not found`, tag: 'Neo4J'}
 
     console.log(`[Neo4J] User ${user_id} deleted`)
     res.send({user_id})
@@ -296,7 +294,7 @@ exports.update_password = async (req, res) => {
     const query = `
       ${user_query}
       SET user.password_hashed = $password_hashed
-      SEt user.password_changed = true
+      SET user.password_changed = true
       RETURN user
       `
 
@@ -415,18 +413,16 @@ exports.create_admin_if_not_exists = async () => {
       // Find the administrator account or create it if it does not exist
       MERGE (administrator:User {username:$admin_username})
 
-      // Make the administrator an actual administrator
-      SET administrator.isAdmin = true
-
       // Check if the administrator account is missing its password
       // If the administrator account does not have a password (newly created), set it
       WITH administrator
       WHERE NOT EXISTS(administrator.password_hashed)
       SET administrator.password_hashed = $password_hashed
+      SET administrator._id = randomUUID() // THIS IS IMPORTANT
+      SET administrator.isAdmin = true
 
       // Set some additional properties
       SET administrator.display_name = 'Administrator'
-      SET administrator._id = randomUUID() // THIS IS IMPORTANT
 
       // Return the account
       RETURN administrator
