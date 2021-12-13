@@ -7,11 +7,10 @@ const {
   error_handling,
   get_id_of_user,
   compare_password,
+  user_query,
+  find_user_in_db,
+  find_user_by_id,
 } = require('../../utils.js')
-
-const {
-  find_user_in_db
-} = require('./users.js')
 
 dotenv.config()
 
@@ -22,12 +21,8 @@ const register_last_login = async (user_id) => {
 
   try {
     const query = `
-      MATCH (user:User)
-      WHERE id(user) = toInteger($user_id)
-
+      ${user_query}
       SET user.last_login = date()
-
-      // Return user if found
       RETURN user
       `
 
@@ -65,9 +60,11 @@ exports.middleware = async (req, res, next) => {
   try {
     const token = await retrieve_jwt(req, res)
     const {user_id} = await decode_token(token)
-    const user = await find_user_in_db(user_id)
+
+    const user = await find_user_by_id(user_id)
 
     res.locals.user = user
+
     next()
   }
   catch (error) {

@@ -9,7 +9,8 @@ const {
   hash_password,
   user_query,
   user_id_filter,
-
+  find_user_in_db,
+  find_user_by_id,
 } = require('../../utils.js')
 
 dotenv.config()
@@ -35,7 +36,6 @@ function self_only_unless_admin(req, res){
       ?? res.locals.user.identity.low
       ?? res.locals.user.identity
   }
-
 }
 
 
@@ -45,41 +45,12 @@ function get_user_id_from_query_or_own(req, res){
   return user_id
 }
 
-const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
-  // This would maybe be better without throwing errors when user not found
-  const session = driver.session()
-  session.run(`
-    MATCH (user:User)
-
-    // Allow user to identify using either userrname or email address
-    WHERE user.username = $identifier
-      OR user.email_address=$identifier
-      OR user._id = $identifier
-      //OR id(user) = toInteger($identifier) // <= Removed query using identity
-
-    // Return user if found
-    RETURN user
-    `, { identifier })
-  .then(result => {
-
-    if(!result.records.length) return reject({code: 400, message: `User ${identifier} not found`, tag: 'Neo4J'})
-    if(result.records.length > 1) return reject({code: 500, message: `Multiple users found`, tag: 'Neo4J'})
-
-    const user = result.records[0].get('user')
-
-    resolve(user)
-  })
-  .catch(error => { reject({code: 500, message:error}) })
-  .finally( () => session.close())
-
-})
-
 
 exports.get_user = async (req, res) => {
 
   try {
     const user_id = get_user_id_from_query_or_own(req, res)
-    const user = await find_user_in_db(user_id)
+    const user = await find_user_by_id(user_id)
     delete user.properties.password_hashed
     res.send(user)
     console.log(`[Neo4J] USer ${user_id} queried`)
@@ -442,5 +413,3 @@ exports.create_admin_if_not_exists = async () => {
     session.close()
   }
 }
-
-exports.find_user_in_db = find_user_in_db
