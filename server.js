@@ -10,7 +10,7 @@ const {commit} = require('./commit.json')
 const {
   url: neo4j_url,
   get_connected,
-  connection_check: db_connection_check
+  init: db_init
 } = require('./db.js')
 
 dotenv.config()
@@ -18,7 +18,7 @@ dotenv.config()
 console.log(`== User manager (Neo4J edition) v${version} ==`)
 
 
-db_connection_check()
+db_init()
 
 // Port configuration
 const {
