@@ -1,6 +1,6 @@
 {
   "name": "user_manager_neo4j",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "",
   "main": "server.js",
   "scripts": {
@@ -12,7 +12,7 @@
   "dependencies": {
     "@moreillon/express_identification_middleware": "^1.1.0",
     "axios": "^0.21.4",
-    "bcrypt": "^4.0.1",
+    "bcrypt": ">=5.0.0",
     "cookies": "^0.8.0",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
