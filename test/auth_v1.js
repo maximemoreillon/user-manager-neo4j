@@ -16,12 +16,12 @@ describe("/auth", () => {
 
   before( async () => {
     //console.log = function () {}
-    await sleep(9000) // wait for admin to be created
+    await sleep(7000) // wait for admin to be created
   })
 
 
   // We will test root GET related logics
-  describe("POST /login", () => {
+  describe("POST /auth/login", () => {
 
     // What should it do
     it("Should allow admin login", async () => {

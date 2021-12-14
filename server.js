@@ -4,8 +4,7 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const {version, author} = require('./package.json')
-const router_v1 = require('./routes/v1/index.js')
-const controller = require('./controllers/v1/users.js')
+const {create_admin_if_not_exists} = require('./controllers/v1/users.js')
 const {commit} = require('./commit.json')
 const {
   url: neo4j_url,
@@ -19,6 +18,7 @@ console.log(`== User manager (Neo4J edition) v${version} ==`)
 
 
 db_init()
+create_admin_if_not_exists()
 
 // Port configuration
 const {
@@ -43,14 +43,14 @@ app.get('/', (req, res) => {
   })
 })
 
-app.use('/', router_v1)
-app.use('/v1', router_v1)
+app.use('/', require('./routes/v1/index.js'))
+app.use('/v1', require('./routes/v1/index.js'))
+app.use('/v2', require('./routes/v2/index.js'))
 
 // Start server
 app.listen(APP_PORT, () => {
   console.log(`[Express] Listening on *:${APP_PORT}`);
 })
 
-controller.create_admin_if_not_exists()
 
 exports.app = app

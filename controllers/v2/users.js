@@ -3,7 +3,6 @@ const dotenv = require('dotenv')
 const newUserSchema = require('../../schemas/newUser.js')
 const passwordUpdateSchema = require('../../schemas/passwordUpdate.js')
 const {
-  get_current_user_id,
   error_handling,
   compare_password,
   hash_password,
@@ -15,28 +14,30 @@ const {
 
 dotenv.config()
 
-
 function self_only_unless_admin(req, res){
 
   // THIS NEEDS A REVIEW
 
-  const current_user_is_admin = !!res.locals.user.properties.isAdmin
+  const current_user = res.locals.user
+
+  const current_user_is_admin = !!current_user.isAdmin
 
   if(current_user_is_admin) {
     return req.body.user_id
       ?? req.query.user_id
       ?? req.params.user_id
-      ?? res.locals.user.properties._id
+      ?? current_user._id
+
   }
   else {
-    res.locals.user.properties._id
+    return current_user._id
   }
 }
 
 
 function get_user_id_from_query_or_own(req, res){
   let {user_id} = req.params
-  if(user_id === 'self') user_id = get_current_user_id(res)
+  if(user_id === 'self') user_id = res.locals.user._id
   return user_id
 }
 
@@ -45,10 +46,10 @@ exports.get_user = async (req, res) => {
 
   try {
     const user_id = get_user_id_from_query_or_own(req, res)
-    const user = await find_user_by_id(user_id)
-    delete user.properties.password_hashed
+    const {properties: user} = await find_user_by_id(user_id)
+    delete user.password_hashed
     res.send(user)
-    console.log(`[Neo4J] USer ${user_id} queried`)
+    console.log(`[Neo4J] User ${user_id} queried`)
   }
   catch (error) {
     error_handling(error, res)
@@ -61,7 +62,7 @@ exports.create_user = async (req, res) => {
 
   try {
     // Currently, only admins can create accounts
-    if(!res.locals.user.properties.isAdmin){
+    if(!res.locals.user.isAdmin){
       throw {code: 403, message: `Only administrators can create users`, tag: 'Auth'}
     }
 
@@ -104,13 +105,12 @@ exports.create_user = async (req, res) => {
 
     const {records} = await session.run(query, params)
 
-
-
-
     // No record implies that the user already existed
     if(!records.length) throw {code: 403, message: `User ${username} already exists`, tag: 'Neo4J'}
 
-    const user = records[0].get('user')
+    const {properties:user} = records[0].get('user')
+    delete user.password_hashed
+
     console.log(`[Neo4J] User ${username} created`)
     res.send(user)
 
@@ -135,7 +135,7 @@ exports.delete_user = async (req, res) => {
 
     // Prevent normal users to create a user
     // TODO: allow users to delete self
-    if(!current_user.properties.isAdmin){
+    if(!current_user.isAdmin){
       throw {code: 403, message: 'Unauthorized'}
     }
 
@@ -184,7 +184,7 @@ exports.patch_user = async (req, res) => {
       'first_name',
     ]
 
-    if(current_user.properties.isAdmin){
+    if(current_user.isAdmin){
       customizable_fields= customizable_fields.concat([
         'isAdmin',
         'locked',
@@ -210,10 +210,8 @@ exports.patch_user = async (req, res) => {
 
     if(!records.length) throw {code: 404, mesage: `User ${user_id} not found`, tag: 'Neo4J'}
 
-    const user = records[0].get('user')
-
-    // Remove password in response
-    delete user.properties.password_hashed
+    const {properties:user} = records[0].get('user')
+    delete user.password_hashed
 
     console.log(`[Neo4J] User ${user_id} updated`)
 
@@ -246,8 +244,8 @@ exports.update_password = async (req, res) => {
 
     // Get current user info
     const {user_id} = req.params
-    const current_user_id = res.locals.user.properties._id
-    const user_is_admin = res.locals.user.properties.isAdmin
+    const current_user_id = res.locals.user._id
+    const user_is_admin = res.locals.user.isAdmin
 
     // Prevent an user from modifying another's password
     if(String(user_id) !== String(current_user_id) && !user_is_admin) {
@@ -270,8 +268,8 @@ exports.update_password = async (req, res) => {
 
     if(!records.length) throw `User ${user_id} not found`
 
-    const user = records[0].get('user')
-    delete user.properties.password_hashed
+    const {properties:user} = records[0].get('user')
+    delete user.password_hashed
     console.log(`[Neo4J] Password of user ${user_id} updated`)
     res.send(user)
 
@@ -343,8 +341,8 @@ exports.get_users = async (req, res) => {
 
     const {records} = await session.run(query, parameters)
 
-    const users = records.map(record => record.get('user'))
-    users.forEach( user => { delete user.properties.password_hashed })
+    const users = records.map(record => record.get('user').properties )
+    users.forEach( user => { delete user.password_hashed })
 
     res.send( users )
     console.log(`[Neo4j] Users queried`)
@@ -359,57 +357,3 @@ exports.get_users = async (req, res) => {
   }
 
 }
-
-const create_admin_if_not_exists = async () => {
-
-  console.log(`[Neo4J] Creating admin account`)
-
-  const session = driver.session()
-
-  try {
-    const {
-      DEFAULT_ADMIN_USERNAME: admin_username = 'admin',
-      DEFAULT_ADMIN_PASSWORD: admin_password = 'admin',
-    } = process.env
-
-
-    const password_hashed = await hash_password(admin_password)
-
-    const query = `
-      // Find the administrator account or create it if it does not exist
-      MERGE (administrator:User {username:$admin_username})
-
-      // Check if the administrator account is missing its password
-      // If the administrator account does not have a password (newly created), set it
-      WITH administrator
-      WHERE NOT EXISTS(administrator.password_hashed)
-      SET administrator.password_hashed = $password_hashed
-      SET administrator._id = randomUUID() // THIS IS IMPORTANT
-      SET administrator.isAdmin = true
-
-      // Set some additional properties
-      SET administrator.display_name = 'Administrator'
-
-      // Return the account
-      RETURN administrator
-      `
-
-    const {records} = await session.run(query, { admin_username, password_hashed })
-
-    if(records.length) console.log(`[Neo4J] Admin creation: admin account created`)
-    else console.log(`[Neo4J] Admin creation: admin already existed`)
-
-
-
-  } catch (error) {
-    console.log(error)
-    console.log(`[Neo4J] Admin creation failed, retrying in 10s...`)
-    setTimeout(create_admin_if_not_exists, 10000)
-
-
-  } finally {
-    session.close()
-  }
-}
-
-exports.create_admin_if_not_exists = create_admin_if_not_exists

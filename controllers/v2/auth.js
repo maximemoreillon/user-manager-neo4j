@@ -60,7 +60,7 @@ exports.middleware = async (req, res, next) => {
     const token = await retrieve_jwt(req, res)
     const {user_id} = await decode_token(token)
 
-    const user = await find_user_by_id(user_id)
+    const {properties: user} = await find_user_by_id(user_id)
 
     res.locals.user = user
 
@@ -91,16 +91,17 @@ exports.login = async (req, res) => {
     console.log(`[Auth] Login attempt from user identified as ${identifier}`)
 
     // User query
-    const user = await find_user_in_db(identifier)
+    const user_node = await find_user_in_db(identifier)
+    const user = user_node.properties // new in V2
 
     // Lock check
-    if(user.properties.locked) throw {code: 403, message: `This account is locked`}
+    if(user.locked) throw {code: 403, message: `This account is locked`}
 
     // Password check
-    const password_correct = await compare_password(password, user.properties.password_hashed)
+    const password_correct = await compare_password(password, user.password_hashed)
     if(!password_correct) throw {code: 403, message: `Incorrect password`}
 
-    await register_last_login(user.properties._id)
+    await register_last_login(user._id)
 
     const jwt = await generate_token(user)
 
