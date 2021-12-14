@@ -365,7 +365,7 @@ exports.get_users = async (req, res) => {
 
 }
 
-exports.create_admin_if_not_exists = async () => {
+const create_admin_if_not_exists = async () => {
 
   console.log(`[Neo4J] Creating admin account`)
 
@@ -408,8 +408,13 @@ exports.create_admin_if_not_exists = async () => {
 
   } catch (error) {
     console.log(error)
+    console.log(`[Neo4J] Admin creation failed, retrying in 10s...`)
+    setTimeout(create_admin_if_not_exists, 10000)
+
 
   } finally {
     session.close()
   }
 }
+
+exports.create_admin_if_not_exists = create_admin_if_not_exists
