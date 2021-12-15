@@ -9,7 +9,7 @@ const sleep = (delay) => new Promise(resolve => setTimeout(resolve,delay))
 
 
 // We will test for api users
-describe("/users", () => {
+describe("/v1/users", () => {
 
   const {
     TEST_USERNAME = 'admin',
@@ -29,7 +29,7 @@ describe("/users", () => {
     //console.log = function () {}
     await sleep(1000) // wait for admin to be created
     const {status, body} = await request(app)
-      .post("/auth/login")
+      .post("/v1/auth/login")
       .send({username: TEST_USERNAME, password: TEST_PASSWORD})
 
     if(status !== 200) throw `Login error`
@@ -38,7 +38,7 @@ describe("/users", () => {
 
 
   // We will test root GET related logics
-  describe("GET /", () => {
+  describe("GET /v1/users", () => {
     // What should it do
     it("Should return all users", async () => {
 
@@ -51,7 +51,7 @@ describe("/users", () => {
     })
   })
 
-  describe("POST /", () => {
+  describe("POST /v1/users", () => {
     // What should it do
     it("Should prevent creation of user without password", async () => {
 
@@ -84,7 +84,7 @@ describe("/users", () => {
     })
   })
 
-  describe("GET /users//:user_id", () => {
+  describe("GET /v1/users/:user_id", () => {
     // What should it do
 
     it("Should get the new user", async () => {
@@ -109,7 +109,7 @@ describe("/users", () => {
 
 
 
-  describe("PATCH /:user_id", () => {
+  describe("PATCH /v1/users/:user_id", () => {
 
     it("Should prevent username modification", async () => {
 
@@ -142,7 +142,7 @@ describe("/users", () => {
     })
   })
 
-  describe("PATCH /:user_id/password", () => {
+  describe("PATCH /v1/users/:user_id/password", () => {
 
     it("Should allow the update of a password", async () => {
 
@@ -155,7 +155,7 @@ describe("/users", () => {
     })
   })
 
-  describe("DELETE /:user_id", () => {
+  describe("DELETE /v1/users/:user_id", () => {
     // What should it do
 
     it("Should allow the deletion of a user", async () => {

@@ -8,7 +8,6 @@ const {
   compare_password,
   user_query,
   find_user_in_db,
-  find_user_by_id,
 } = require('../../utils.js')
 
 dotenv.config()
@@ -22,7 +21,7 @@ const register_last_login = async (user_id) => {
     const query = `
       ${user_query}
       SET user.last_login = date()
-      RETURN user
+      RETURN user.last_login as last_login
       `
 
     await session.run(query, {user_id})
@@ -56,11 +55,22 @@ const retrieve_jwt = (req, res) => new Promise( (resolve, reject) => {
 
 exports.middleware = async (req, res, next) => {
 
+  const session = driver.session()
+
   try {
     const token = await retrieve_jwt(req, res)
     const {user_id} = await decode_token(token)
 
-    const {properties: user} = await find_user_by_id(user_id)
+    const query = `
+      ${user_query}
+      RETURN properties(user) as user
+      `
+    const {records} = await session.run(query, {user_id})
+
+    if(!records.length) throw `User ${user_id} not found in the database`
+    if(records.length > 1) throw `Multiple users with ID ${user_id} found in the database`
+
+    const user = records[0].get('user')
 
     res.locals.user = user
 
@@ -69,6 +79,9 @@ exports.middleware = async (req, res, next) => {
   catch (error) {
     console.log(error)
     res.status(403).send(error)
+  }
+  finally {
+    session.close()
   }
 
 }
@@ -91,8 +104,7 @@ exports.login = async (req, res) => {
     console.log(`[Auth] Login attempt from user identified as ${identifier}`)
 
     // User query
-    const user_node = await find_user_in_db(identifier)
-    const user = user_node.properties // new in V2
+    const {properties: user} = await find_user_in_db(identifier)
 
     // Lock check
     if(user.locked) throw {code: 403, message: `This account is locked`}

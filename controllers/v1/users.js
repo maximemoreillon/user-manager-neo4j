@@ -9,7 +9,6 @@ const {
   hash_password,
   user_query,
   user_id_filter,
-  find_user_in_db,
   find_user_by_id,
 } = require('../../utils.js')
 
@@ -43,15 +42,27 @@ function get_user_id_from_query_or_own(req, res){
 
 exports.get_user = async (req, res) => {
 
+  const session = driver.session()
+
   try {
     const user_id = get_user_id_from_query_or_own(req, res)
-    const user = await find_user_by_id(user_id)
-    delete user.properties.password_hashed
-    res.send(user)
+
+    const query = `${user_query} RETURN user`
+    
+    const {records} = await session.run(query, {user_id})
+
+    if(!records.length) throw {code: 404, message: `User ${user_id} not found`}
+
+    const user = records[0].get('user')
+
     console.log(`[Neo4J] USer ${user_id} queried`)
+    res.send(user)
   }
   catch (error) {
     error_handling(error, res)
+  }
+  finally {
+    session.close()
   }
 }
 

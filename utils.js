@@ -52,6 +52,7 @@ exports.decode_token = (token) => new Promise ( (resolve, reject) => {
 
   jwt.verify(token, JWT_SECRET, (error, decoded_token) => {
     if(error) return reject({code: 403, message: `Invalid JWT`})
+
     resolve(decoded_token)
   })
 })
@@ -59,30 +60,6 @@ exports.decode_token = (token) => new Promise ( (resolve, reject) => {
 exports.compare_password = (password_plain, password_hashed) => bcrypt.compare(password_plain, password_hashed)
 exports.hash_password = (password_plain) => bcrypt.hash(password_plain, 10)
 
-
-const find_user_by_id = (user_id) => new Promise ( (resolve, reject) => {
-
-  const session = driver.session()
-
-  const query = `${user_query} RETURN user`
-  // Could enforce string here
-  const params = {user_id}
-
-  session.run(query, params)
-  .then(result => {
-
-    if(!result.records.length) return reject({code: 400, message: `User ${user_id} not found`, tag: 'Neo4J'})
-    if(result.records.length > 1) return reject({code: 500, message: `Multiple users ${user_id} found`, tag: 'Neo4J'})
-
-    const user = result.records[0].get('user')
-
-    resolve(user)
-  })
-  .catch(error => { reject({code: 500, message:error}) })
-  .finally( () => { session.close() } )
-
-})
-exports.find_user_by_id = find_user_by_id
 
 
 const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
