@@ -16,7 +16,7 @@ describe("/auth", () => {
 
   before( async () => {
     //console.log = function () {}
-    await sleep(7000) // wait for admin to be created
+    await sleep(8000) // wait for admin to be created
   })
 
 
