@@ -15,8 +15,6 @@ dotenv.config()
 
 function self_only_unless_admin(req, res){
 
-  // THIS NEEDS A REVIEW
-
   const current_user = res.locals.user
 
   const current_user_is_admin = !!current_user.isAdmin
@@ -148,9 +146,7 @@ exports.delete_user = async (req, res) => {
 
     // Prevent normal users to create a user
     // TODO: allow users to delete self
-    if(!current_user.isAdmin){
-      throw {code: 403, message: 'Unauthorized'}
-    }
+    if(!current_user.isAdmin) throw {code: 403, message: 'Unauthorized'}
 
     const user_id = req.params.user_id
     if(user_id === 'self') user_id = get_current_user_id(res)
@@ -321,6 +317,7 @@ exports.get_users = async (req, res) => {
     }
 
     let ids_query = ''
+
     if(req.query.ids) {
       search_query = `
       WITH user

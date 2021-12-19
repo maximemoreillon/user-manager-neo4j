@@ -48,7 +48,7 @@ exports.get_user = async (req, res) => {
     const user_id = get_user_id_from_query_or_own(req, res)
 
     const query = `${user_query} RETURN user`
-    
+
     const {records} = await session.run(query, {user_id})
 
     if(!records.length) throw {code: 404, message: `User ${user_id} not found`}
@@ -413,10 +413,9 @@ const create_admin_if_not_exists = async () => {
 
 
   } catch (error) {
-    console.log(error)
-    console.log(`[Neo4J] Admin creation failed, retrying in 10s...`)
-    setTimeout(create_admin_if_not_exists, 10000)
 
+    console.log(`[Neo4J] Admin creation failed, retrying in 10s...`, error)
+    setTimeout(create_admin_if_not_exists, 10000)
 
   } finally {
     session.close()

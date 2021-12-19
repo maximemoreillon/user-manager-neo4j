@@ -37,19 +37,7 @@ describe("/v2/users", () => {
   })
 
 
-  // We will test root GET related logics
-  describe("GET /v2/users", () => {
-    // What should it do
-    it("Should return all users", async () => {
 
-      const {status, body} = await request(app)
-        .get("/v2/users")
-        .set('Authorization', `Bearer ${jwt}`)
-
-      expect(status).to.equal(200)
-      expect(body.length).to.be.above(0)
-    })
-  })
 
   describe("POST /v2/users", () => {
     // What should it do
@@ -81,6 +69,35 @@ describe("/v2/users", () => {
       new_user_id = body._id
 
       expect(status).to.equal(200)
+    })
+  })
+
+  describe("GET /v2/users", () => {
+
+    it("Should allow the query of users", async () => {
+
+      const {status, body} = await request(app)
+        .get("/v2/users")
+        .set('Authorization', `Bearer ${jwt}`)
+
+      expect(status).to.equal(200)
+      expect(body.length).to.be.above(0)
+    })
+
+    it("Should allow the query of users with a list of IDs", async () => {
+
+      const {status, body} = await request(app)
+        .get("/v2/users")
+        .query({ ids: [new_user_id] })
+        .set('Authorization', `Bearer ${jwt}`)
+
+      expect(status).to.equal(200)
+      expect(body.length).to.be.above(0)
+    })
+
+    it("Should not allow the anonymous query of all users", async () => {
+      const {status} = await request(app).get("/v2/users")
+      expect(status).to.equal(403)
     })
   })
 
