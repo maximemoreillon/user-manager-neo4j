@@ -31,22 +31,12 @@ exports.retrieve_jwt = (req, res) => new Promise( (resolve, reject) => {
 
   // Did not have to be a promise
 
-  let jwt = req.headers.authorization?.split(" ")[1]
+  const jwt = req.headers.authorization?.split(" ")[1]
     || req.headers.authorization
-
-  if(!jwt) {
-    console.log(`JWT not found in headers, looking into query parameters`)
-    jwt = req.query.jwt
-      || req.query.token
-  }
-
-  if(!jwt) {
-    console.log(`JWT not found in query parameters either, looking into cookies`)
-    jwt = (new Cookies(req, res)).get('jwt')
-      || (new Cookies(req, res)).get('token')
-  }
-
-
+    || (new Cookies(req, res)).get('jwt')
+    || (new Cookies(req, res)).get('token')
+    || req.query.jwt
+    || req.query.token
 
   if(!jwt) return reject(`JWT not provided`)
 
