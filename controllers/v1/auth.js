@@ -8,49 +8,11 @@ const {
   compare_password,
   user_query,
   find_user_in_db,
+  retrieve_jwt,
+  register_last_login,
 } = require('../../utils.js')
 
 dotenv.config()
-
-
-const register_last_login = async (user_id) => {
-
-  const session = driver.session()
-
-  try {
-    const query = `
-      ${user_query}
-      SET user.last_login = date()
-      RETURN user.last_login as last_login
-      `
-
-    await session.run(query, {user_id})
-    console.log(`[Auth] Successfully registered last login for user ${user_id}`)
-  }
-  catch (error) {
-    throw error
-  }
-  finally {
-    session.close()
-  }
-}
-
-
-const retrieve_jwt = (req, res) => new Promise( (resolve, reject) => {
-
-  // Did not have to be a promise
-
-  const jwt = req.headers.authorization?.split(" ")[1]
-    || req.headers.authorization
-    || (new Cookies(req, res)).get('jwt')
-    || (new Cookies(req, res)).get('token')
-    || req.query.jwt
-    || req.query.token
-
-  if(!jwt) return reject(`JWT not provided`)
-
-  resolve(jwt)
-})
 
 
 exports.middleware = async (req, res, next) => {
