@@ -14,10 +14,10 @@ const schema = Joi.object({
 
   password_confirm: Joi.ref('password'),
 
-  // email_address: Joi.string()
-  //   .email({ })
-  //   .required(),
+  email_address: Joi.string()
+    .email({ })
+    .allow(null, '')
 })
-.with('password', 'password_confirm')
+//.with('password', 'password_confirm')
 
 module.exports = schema

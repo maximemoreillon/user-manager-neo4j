@@ -107,6 +107,8 @@ exports.create_user = async (req, res) => {
       SET user._id = randomUUID()
       SET user.password_hashed = $password_hashed
       SET user.display_name = $username
+      SET user.creation_date = date()
+      SET user.activated = true
 
       // Return the user
       RETURN user

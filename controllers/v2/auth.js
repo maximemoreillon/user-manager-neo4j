@@ -23,10 +23,8 @@ exports.middleware = async (req, res, next) => {
     const token = await retrieve_jwt(req, res)
     const {user_id} = await decode_token(token)
 
-    const query = `
-      ${user_query}
-      RETURN properties(user) as user
-      `
+    const query = `${user_query} RETURN properties(user) as user`
+    
     const {records} = await session.run(query, {user_id})
 
     if(!records.length) throw `User ${user_id} not found in the database`

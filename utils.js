@@ -111,7 +111,7 @@ const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
 
     // Allow user to identify using either userrname or email address
     WHERE user.username = $identifier
-      OR user.email_address=$identifier
+      OR user.email_address = $identifier
       OR user._id = $identifier
 
     // Return user if found
