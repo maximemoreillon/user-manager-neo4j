@@ -81,7 +81,7 @@ describe("/v2/users", () => {
         .set('Authorization', `Bearer ${jwt}`)
 
       expect(status).to.equal(200)
-      expect(body.length).to.be.above(0)
+      expect(body.users.length).to.be.above(0)
     })
 
     it("Should allow the query of users with a list of IDs", async () => {
@@ -92,7 +92,7 @@ describe("/v2/users", () => {
         .set('Authorization', `Bearer ${jwt}`)
 
       expect(status).to.equal(200)
-      expect(body.length).to.be.above(0)
+      expect(body.users.length).to.be.above(0)
     })
 
     it("Should not allow the anonymous query of all users", async () => {

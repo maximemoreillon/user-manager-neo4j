@@ -197,6 +197,7 @@ exports.patch_user = async (req, res) => {
       customizable_fields= customizable_fields.concat([
         'isAdmin',
         'locked',
+        'activated'
       ])
     }
 
@@ -252,8 +253,9 @@ exports.update_password = async (req, res) => {
     const {new_password, new_password_confirm} = req.body
 
     // Get current user info
-    const {user_id} = req.params
+    let {user_id} = req.params
     const current_user_id = res.locals.user._id
+    if(user_id === 'self') user_id = current_user_id
     const user_is_admin = res.locals.user.isAdmin
 
     // Prevent an user from modifying another's password
@@ -335,12 +337,9 @@ exports.get_users = async (req, res) => {
       ${search_query}
       ${ids_query}
 
-      RETURN DISTINCT user
+      RETURN collect(properties(user)) as users, count(user) as count
 
       // TODO: BATCHING
-
-
-      LIMIT 100
       `
 
     const parameters = {
@@ -351,10 +350,15 @@ exports.get_users = async (req, res) => {
 
     const {records} = await session.run(query, parameters)
 
-    const users = records.map(record => record.get('user').properties )
+    const record = records[0]
+
+    const users = record.get('users')
+    const count = record.get('count')
+
+    //const users = records.map(record => record.get('user').properties )
     users.forEach( user => { delete user.password_hashed })
 
-    res.send( users )
+    res.send( {users, count} )
     console.log(`[Neo4j] Users queried`)
 
 
