@@ -304,66 +304,87 @@ exports.get_users = async (req, res) => {
 
   try {
 
-    let search_query = ''
-    if(req.query.search) {
-      search_query = `
+    const {
+      search,
+      ids,
+      batch_size = 100,
+      start_index = 0,
+    } = req.query
+
+    const search_exceptions =  [ 'password_hashed', '_id']
+
+    const search_query = `
+      // Making a clear transition from previosu queries
+      WITH 1 as dummy
       // Make a list of the keys of each node
       // Additionally, filter out fields that should not be searched
-      WITH [key IN KEYS(user) WHERE NOT key IN $exceptions] AS keys, user
+      MATCH (all_users:User)
+      WITH [key IN KEYS(all_users) WHERE NOT key IN $search_exceptions] AS keys
 
-      // Unwinding
       UNWIND keys as key
-
-      // Filter nodes by looking for properties
-      WITH key, user
+      OPTIONAL MATCH (user:User)
       WHERE toLower(toString(user[key])) CONTAINS toLower($search)
       `
-    }
 
-    let ids_query = ''
-
-    if(req.query.ids) {
-      search_query = `
-      WITH user
-
-      // Unwinding
+    const ids_query = `
+      // Making a clear transition from previosu queries
+      WITH 1 as dummy
       UNWIND $ids as id
-      WITH id, user
-      WHERE user._id = toString(id)
+      OPTIONAL MATCH (user:User {_id: id})
       `
-    }
+
 
     const query = `
+
       MATCH (user:User)
+      ${search ? search_query : ''}
+      ${ids ? ids_query : ''}
 
-      ${search_query}
-      ${ids_query}
 
-      RETURN collect(properties(user)) as users, count(user) as count
+      // Aggregation
+      WITH
+        COLLECT(DISTINCT properties(user)) as users,
+        COUNT(DISTINCT user) as count,
+        toInteger($start_index) as start_index,
+        toInteger($batch_size) as batch_size,
+        (toInteger($start_index)+toInteger($batch_size)) as end_index
 
-      // TODO: BATCHING
+      // Batching
+      RETURN
+        count,
+        users[start_index..end_index] AS users,
+        start_index,
+        batch_size
       `
 
     const parameters = {
-        search: req.query.search,
-        exceptions: [ 'password_hashed' ],
-        ids: req.query.ids,
+        search,
+        search_exceptions,
+        ids,
+        start_index,
+        batch_size
       }
 
     const {records} = await session.run(query, parameters)
 
     const record = records[0]
 
+    if(!record) throw {code: 404, message: `Query failed`}
+
     const users = record.get('users')
-    const count = record.get('count')
 
-    //const users = records.map(record => record.get('user').properties )
-    users.forEach( user => { delete user.password_hashed })
+    // Delete passwords from users
+    users.forEach(user => { delete user.password_hashed })
 
-    res.send( {users, count} )
+    const response =  {
+      batch_size: record.get('batch_size'),
+      start_index: record.get('start_index'),
+      count: record.get('count'),
+      users,
+    }
     console.log(`[Neo4j] Users queried`)
 
-
+    res.send(response)
   }
   catch (error) {
     error_handling(error, res)
