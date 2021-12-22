@@ -95,6 +95,39 @@ describe("/v2/users", () => {
       expect(body.users.length).to.be.above(0)
     })
 
+    it("Should not find users when using with a list of invalid IDs", async () => {
+
+      const {status, body} = await request(app)
+        .get("/v2/users")
+        .query({ ids: ['aaa', 'bbb'] })
+        .set('Authorization', `Bearer ${jwt}`)
+
+      expect(status).to.equal(200)
+      expect(body.users.length).to.equal(0)
+    })
+
+    it("Should allow the query of users with a search string", async () => {
+
+      const {status, body} = await request(app)
+        .get("/v2/users")
+        .query({ search: 'test' })
+        .set('Authorization', `Bearer ${jwt}`)
+
+      expect(status).to.equal(200)
+      expect(body.users.length).to.be.above(0)
+    })
+
+    it("Should not find users when using an invalid search string", async () => {
+
+      const {status, body} = await request(app)
+        .get("/v2/users")
+        .query({ search: 'opasdijkopasdik' })
+        .set('Authorization', `Bearer ${jwt}`)
+
+      expect(status).to.equal(200)
+      expect(body.users.length).to.equal(0)
+    })
+
     it("Should not allow the anonymous query of all users", async () => {
       const {status} = await request(app).get("/v2/users")
       expect(status).to.equal(403)
