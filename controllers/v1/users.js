@@ -184,7 +184,7 @@ exports.patch_user = async (req, res) => {
 
     const current_user = res.locals.user
     const current_user_id = current_user.properties._id
-    const user_is_admin = res.locals.user.isAdmin
+    const user_is_admin = res.locals.user.properties.isAdmin
 
     let {user_id} = req.params
     if(user_id === 'self') user_id = current_user_id
