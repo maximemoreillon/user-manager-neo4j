@@ -182,9 +182,19 @@ exports.patch_user = async (req, res) => {
 
   try {
 
-    const user_id = self_only_unless_admin(req, res)
-    const properties = req.body
     const current_user = res.locals.user
+    const current_user_id = current_user._id
+    const user_is_admin = res.locals.user.isAdmin
+
+    let {user_id} = req.params
+    if(user_id === 'self') user_id = current_user_id
+
+    // Prevent an user from modifying another's password
+    if(String(user_id) !== String(current_user_id) && !user_is_admin) {
+      return res.status(403).send(`Unauthorized to modify another user's password`)
+    }
+
+    const properties = req.body
 
     // Only allow certain properties to be edited
     let customizable_fields = [
