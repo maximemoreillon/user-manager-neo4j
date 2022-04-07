@@ -3,6 +3,10 @@ const dotenv = require('dotenv')
 const newUserSchema = require('../../schemas/newUser.js')
 const passwordUpdateSchema = require('../../schemas/passwordUpdate.js')
 const {
+  user_editable_fields,
+  admin_editable_fields,
+} = require('../../schemas/editableUserFields.js')
+const {
   get_current_user_id,
   error_handling,
   compare_password,
