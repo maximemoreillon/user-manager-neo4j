@@ -1,6 +1,6 @@
 const request = require("supertest")
 const {expect} = require("chai")
-const {app} = require("../server.js")
+const {app} = require("../main.js")
 const dotenv = require('dotenv')
 dotenv.config()
 

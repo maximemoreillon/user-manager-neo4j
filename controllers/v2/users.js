@@ -1,9 +1,15 @@
 const {driver} = require('../../db.js')
+const createHttpError = require('http-errors')
 const dotenv = require('dotenv')
 const newUserSchema = require('../../schemas/newUser.js')
-const passwordUpdateSchema = require('../../schemas/passwordUpdate.js')
 const {
-  error_handling,
+  user_editable_fields,
+  admin_editable_fields,
+} = require('../../schemas/editableUserFields.js')
+
+const passwordUpdateSchema = require('../../schemas/passwordUpdate.js')
+
+const {
   compare_password,
   hash_password,
   user_query,
@@ -39,7 +45,7 @@ function get_user_id_from_query_or_own(req, res){
 }
 
 
-exports.get_user = async (req, res) => {
+exports.get_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -52,7 +58,7 @@ exports.get_user = async (req, res) => {
       `
     const {records} = await session.run(query, {user_id})
 
-    if(!records.length) throw {code: 404, message: `User ${user_id} not found`}
+    if(!records.length) throw createHttpError(404, `User ${user_id} not found`)
 
     const user = records[0].get('user')
 
@@ -60,29 +66,28 @@ exports.get_user = async (req, res) => {
     res.send(user)
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
   }
 }
 
-exports.create_user = async (req, res) => {
+exports.create_user = async (req, res, next) => {
 
   const session = driver.session()
 
   try {
     // Currently, only admins can create accounts
-    if(!res.locals.user.isAdmin){
-      throw {code: 403, message: `Only administrators can create users`, tag: 'Auth'}
-    }
+    if(!res.locals.user.isAdmin) throw createHttpError(403, `Only administrators can create users`)
 
     const properties = req.body
 
     try {
       await newUserSchema.validateAsync(properties)
-    } catch (error) {
-      throw {code: 400, message: error}
+    }
+    catch (error) {
+      throw createHttpError(400, error)
     }
 
     const {
@@ -119,7 +124,7 @@ exports.create_user = async (req, res) => {
     const {records} = await session.run(query, params)
 
     // No record implies that the user already existed
-    if(!records.length) throw {code: 403, message: `User ${username} already exists`, tag: 'Neo4J'}
+    if(!records.length) throw createHttpError(400, `User ${username} already exists`)
 
     const {properties:user} = records[0].get('user')
     delete user.password_hashed
@@ -129,7 +134,7 @@ exports.create_user = async (req, res) => {
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -137,7 +142,7 @@ exports.create_user = async (req, res) => {
 
 }
 
-exports.delete_user = async (req, res) => {
+exports.delete_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -148,7 +153,7 @@ exports.delete_user = async (req, res) => {
 
     // Prevent normal users to create a user
     // TODO: allow users to delete self
-    if(!current_user.isAdmin) throw {code: 403, message: 'Unauthorized'}
+    if(!current_user.isAdmin) throw createHttpError(404, `Unauthorized`)
 
     const user_id = req.params.user_id
     if(user_id === 'self') user_id = get_current_user_id(res)
@@ -161,14 +166,14 @@ exports.delete_user = async (req, res) => {
 
     const {records} = await session.run(query, { user_id })
 
-    if(!records.length) throw {code: 404, message: `User ${user_id} not found`, tag: 'Neo4J'}
+    if(!records.length) throw createHttpError(404, `User ${user_id} not found`)
 
     console.log(`[Neo4J] User ${user_id} deleted`)
     res.send({user_id})
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -176,7 +181,7 @@ exports.delete_user = async (req, res) => {
 
 }
 
-exports.patch_user = async (req, res) => {
+exports.patch_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -191,32 +196,16 @@ exports.patch_user = async (req, res) => {
 
     // Prevent an user from modifying another's password
     if(String(user_id) !== String(current_user_id) && !user_is_admin) {
-      return res.status(403).send(`Unauthorized to modify another user's password`)
+      throw createHttpError(403, `Unauthorized to modify another user`)
     }
 
     const properties = req.body
 
-    // Only allow certain properties to be edited
-    let customizable_fields = [
-      'avatar_src',
-      'last_name',
-      'display_name',
-      'email_address',
-      'first_name',
-    ]
-
-    if(current_user.isAdmin){
-      customizable_fields= customizable_fields.concat([
-        'isAdmin',
-        'locked',
-        'activated'
-      ])
-    }
+    const customizable_fields = current_user.isAdmin ? admin_editable_fields : user_editable_fields
 
     for (let [key, value] of Object.entries(properties)) {
       if(!customizable_fields.includes(key)) {
-        console.log(`Unauthorized attempt to modify property ${key}`)
-        return res.status(403).send(`Unauthorized to modify ${key}`)
+        throw createHttpError(403, `Unauthorized to modify ${key}`)
       }
     }
 
@@ -230,9 +219,9 @@ exports.patch_user = async (req, res) => {
 
     const {records} = await session.run(query,parameters)
 
-    if(!records.length) throw {code: 404, mesage: `User ${user_id} not found`, tag: 'Neo4J'}
+    if(!records.length) throw createHttpError(404, `User ${user_id} not found`)
 
-    const {properties:user} = records[0].get('user')
+    const { properties:user } = records[0].get('user')
     delete user.password_hashed
 
     console.log(`[Neo4J] User ${user_id} updated`)
@@ -241,7 +230,7 @@ exports.patch_user = async (req, res) => {
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -249,7 +238,7 @@ exports.patch_user = async (req, res) => {
 
 }
 
-exports.update_password = async (req, res) => {
+exports.update_password = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -258,8 +247,9 @@ exports.update_password = async (req, res) => {
 
     try {
       await passwordUpdateSchema.validateAsync(req.body)
-    } catch (error) {
-      throw {code: 400, message: error}
+    }
+    catch (error) {
+      throw createHttpError(400, error)
     }
 
     const {new_password, new_password_confirm} = req.body
@@ -272,7 +262,7 @@ exports.update_password = async (req, res) => {
 
     // Prevent an user from modifying another's password
     if(String(user_id) !== String(current_user_id) && !user_is_admin) {
-      return res.status(403).send(`Unauthorized to modify another user's password`)
+      throw createHttpError(403, `Unauthorized to modify another user's password`)
     }
 
 
@@ -289,7 +279,7 @@ exports.update_password = async (req, res) => {
 
     const {records} = await session.run(query, params)
 
-    if(!records.length) throw `User ${user_id} not found`
+    if(!records.length) throw createHttpError(404, `User ${user_id} not found`)
 
     const {properties:user} = records[0].get('user')
     delete user.password_hashed
@@ -298,7 +288,7 @@ exports.update_password = async (req, res) => {
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -308,7 +298,7 @@ exports.update_password = async (req, res) => {
 
 }
 
-exports.get_users = async (req, res) => {
+exports.get_users = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -379,7 +369,7 @@ exports.get_users = async (req, res) => {
 
     const record = records[0]
 
-    if(!record) throw {code: 404, message: `Query failed`}
+    if(!record) throw createHttpError(500, `Query failed`)
 
     const users = record.get('users')
 
@@ -397,7 +387,7 @@ exports.get_users = async (req, res) => {
     res.send(response)
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()

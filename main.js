@@ -47,7 +47,14 @@ app.use('/', require('./routes/v1/index.js'))
 app.use('/v1', require('./routes/v1/index.js'))
 app.use('/v2', require('./routes/v2/index.js'))
 
-// Start server
+// Express error handler
+app.use((error, req, res, next) => {
+  console.error(error)
+  let { statusCode = 500, message = error } = error
+  if(isNaN(statusCode) || statusCode > 600) statusCode = 500
+  res.status(statusCode).send(message)
+})
+
 app.listen(APP_PORT, () => {
   console.log(`[Express] Listening on *:${APP_PORT}`);
 })

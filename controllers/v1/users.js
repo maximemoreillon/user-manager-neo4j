@@ -191,26 +191,13 @@ exports.patch_user = async (req, res) => {
 
     // Prevent an user from modifying another's password
     if(String(user_id) !== String(current_user_id) && !user_is_admin) {
-      return res.status(403).send(`Unauthorized to modify another user's password`)
+      return res.status(403).send(`Unauthorized to modify another user`)
     }
 
     const properties = req.body
 
     // Only allow certain properties to be edited
-    let customizable_fields = [
-      'avatar_src',
-      'last_name',
-      'display_name',
-      'email_address',
-      'first_name',
-    ]
-
-    if(current_user.properties.isAdmin){
-      customizable_fields= customizable_fields.concat([
-        'isAdmin',
-        'locked',
-      ])
-    }
+    const customizable_fields = current_user.isAdmin ? admin_editable_fields : user_editable_fields
 
     for (let [key, value] of Object.entries(properties)) {
       if(!customizable_fields.includes(key)) {

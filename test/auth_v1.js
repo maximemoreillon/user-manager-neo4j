@@ -1,6 +1,6 @@
 const request = require("supertest")
-const expect = require("chai").expect
-const {app} = require("../server.js")
+const {expect} = require("chai")
+const {app} = require("../main.js")
 
 
 const sleep = (delay) => new Promise(resolve => setTimeout(resolve,delay))

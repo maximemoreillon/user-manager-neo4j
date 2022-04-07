@@ -1,9 +1,9 @@
 const {driver} = require('../../db.js')
 const dotenv = require('dotenv')
+const createHttpError = require('http-errors')
 const {
   decode_token,
   generate_token,
-  error_handling,
   get_id_of_user,
   compare_password,
   user_query,
@@ -24,7 +24,7 @@ exports.middleware = async (req, res, next) => {
     const {user_id} = await decode_token(token)
 
     const query = `${user_query} RETURN properties(user) as user`
-    
+
     const {records} = await session.run(query, {user_id})
 
     if(!records.length) throw `User ${user_id} not found in the database`
@@ -46,7 +46,7 @@ exports.middleware = async (req, res, next) => {
 
 }
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
 
   try {
 
@@ -58,8 +58,8 @@ exports.login = async (req, res) => {
 
     const {password} = req.body
 
-    if(!identifier) throw {code: 400, message: `Missing username or e-mail address`}
-    if(!password) throw {code: 400, message: `Missing password`}
+    if(!identifier) throw createHttpError(400, `Missing username or e-mail address`)
+    if(!password) throw createHttpError(400, `Missing password`)
 
     console.log(`[Auth] Login attempt from user identified as ${identifier}`)
 
@@ -67,11 +67,11 @@ exports.login = async (req, res) => {
     const {properties: user} = await find_user_in_db(identifier)
 
     // Lock check
-    if(user.locked) throw {code: 403, message: `This account is locked`}
+    if(user.locked) throw createHttpError(403, `This account is locked`)
 
     // Password check
     const password_correct = await compare_password(password, user.password_hashed)
-    if(!password_correct) throw {code: 403, message: `Incorrect password`}
+    if(!password_correct) throw createHttpError(403, `Incorrect password`)
 
     await register_last_login(user._id)
 
@@ -82,7 +82,7 @@ exports.login = async (req, res) => {
     console.log(`[Auth] Successful login from user identified as ${identifier}`)
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
 
 }

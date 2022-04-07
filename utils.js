@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt')
+const createHttpError = require('http-errors')
 const jwt = require('jsonwebtoken')
 const Cookies = require('cookies')
 const {driver} = require('./db.js')
@@ -125,8 +126,8 @@ const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
   session.run(query, params)
   .then(result => {
 
-    if(!result.records.length) return reject({code: 400, message: `User ${identifier} not found`, tag: 'Neo4J'})
-    if(result.records.length > 1) return reject({code: 500, message: `Multiple users ${identifier} found`, tag: 'Neo4J'})
+    if(!result.records.length) return reject(createHttpError(404, `User ${identifier} not found`))
+    if(result.records.length > 1) return reject(createHttpError(500, `Multiple users ${identifier} found`))
 
     const user = result.records[0].get('user')
 

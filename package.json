@@ -1,8 +1,8 @@
 {
   "name": "user_manager_neo4j",
-  "version": "4.0.9",
+  "version": "4.1.0",
   "description": "",
-  "main": "server.js",
+  "main": "main.js",
   "scripts": {
     "test": "mocha --timeout 10000 --exit",
     "coverage": "nyc mocha --timeout 15000 --exit"
@@ -16,15 +16,16 @@
     "cookies": "^0.8.0",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
-    "express": "^4.17.1",
-    "joi": "^17.5.0",
+    "express": "^4.17.3",
+    "http-errors": "^2.0.0",
+    "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
-    "neo4j-driver": "^4.3.3"
+    "neo4j-driver": "^4.4.5"
   },
   "devDependencies": {
-    "chai": "^4.3.4",
+    "chai": "^4.3.6",
     "mocha": "^8.4.0",
     "nyc": "^15.1.0",
-    "supertest": "^6.1.6"
+    "supertest": "^6.2.2"
   }
 }
