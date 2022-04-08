@@ -1,13 +1,12 @@
-const {driver} = require('../../db.js')
 const createHttpError = require('http-errors')
 const dotenv = require('dotenv')
-const newUserSchema = require('../../schemas/newUser.js')
+const { driver } = require('../../db.js')
+const { passwordUpdateSchema } = require('../../schemas/passwords.js')
 const {
-  user_editable_fields,
-  admin_editable_fields,
-} = require('../../schemas/editableUserFields.js')
-
-const passwordUpdateSchema = require('../../schemas/passwordUpdate.js')
+  newUserSchema,
+  userUpdateSchema,
+  userAdminUpdateSchema
+  } = require('../../schemas/users.js')
 
 const {
   compare_password,
@@ -201,13 +200,14 @@ exports.patch_user = async (req, res, next) => {
 
     const properties = req.body
 
-    const customizable_fields = current_user.isAdmin ? admin_editable_fields : user_editable_fields
-
-    for (let [key, value] of Object.entries(properties)) {
-      if(!customizable_fields.includes(key)) {
-        throw createHttpError(403, `Unauthorized to modify ${key}`)
-      }
+    try {
+      if(user_is_admin) await userAdminUpdateSchema.validateAsync(properties)
+      else await userUpdateSchema.validateAsync(properties)
     }
+    catch (error) {
+      throw createHttpError(403, error)
+    }
+
 
     const query = `
       ${user_query}

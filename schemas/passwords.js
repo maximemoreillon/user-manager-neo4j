@@ -12,4 +12,4 @@ const schema = Joi.object({
 })
 .with('new_password', 'new_password_confirm')
 
-module.exports = schema
+exports.passwordUpdateSchema = schema

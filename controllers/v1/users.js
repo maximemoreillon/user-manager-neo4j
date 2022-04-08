@@ -1,11 +1,11 @@
 const {driver} = require('../../db.js')
 const dotenv = require('dotenv')
-const newUserSchema = require('../../schemas/newUser.js')
-const passwordUpdateSchema = require('../../schemas/passwordUpdate.js')
+const { passwordUpdateSchema } = require('../../schemas/passwords.js')
 const {
-  user_editable_fields,
-  admin_editable_fields,
-} = require('../../schemas/editableUserFields.js')
+  newUserSchema,
+  userUpdateSchema,
+  userAdminUpdateSchema
+  } = require('../../schemas/users.js')
 const {
   get_current_user_id,
   error_handling,
@@ -84,7 +84,8 @@ exports.create_user = async (req, res) => {
 
     try {
       await newUserSchema.validateAsync(properties)
-    } catch (error) {
+    }
+    catch (error) {
       throw {code: 400, message: error}
     }
 
@@ -200,15 +201,14 @@ exports.patch_user = async (req, res) => {
 
     const properties = req.body
 
-    // Only allow certain properties to be edited
-    const customizable_fields = current_user.isAdmin ? admin_editable_fields : user_editable_fields
-
-    for (let [key, value] of Object.entries(properties)) {
-      if(!customizable_fields.includes(key)) {
-        console.log(`Unauthorized attempt to modify property ${key}`)
-        return res.status(403).send(`Unauthorized to modify ${key}`)
-      }
+    try {
+      if(user_is_admin) await userAdminUpdateSchema.validateAsync(properties)
+      else await userUpdateSchema.validateAsync(properties)
     }
+    catch (error) {
+      throw {code: 403, mesage: error.message, tag: 'Joi'}
+    }
+
 
     const query = `
       ${user_query}
