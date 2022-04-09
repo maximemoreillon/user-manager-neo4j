@@ -365,6 +365,8 @@ exports.get_users = async (req, res, next) => {
     const {records} = await session.run(query, parameters)
 
     const record = records[0]
+    
+    // Would be better to return 200 with an exmpty set...
     if(!record) throw createHttpError(404, `No user found`)
 
     const users = record.get('users')
