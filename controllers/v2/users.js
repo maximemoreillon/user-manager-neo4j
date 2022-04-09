@@ -6,7 +6,7 @@ const {
   newUserSchema,
   userUpdateSchema,
   userAdminUpdateSchema
-  } = require('../../schemas/users.js')
+} = require('../../schemas/users.js')
 
 const {
   compare_password,

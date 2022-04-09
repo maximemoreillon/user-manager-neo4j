@@ -1,6 +1,6 @@
 {
   "name": "user_manager_neo4j",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "coverage": "nyc mocha --timeout 15000 --exit"
   },
   "author": "Maxime MOREILLON",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@moreillon/express_identification_middleware": "^1.1.0",
     "axios": "^0.21.4",
