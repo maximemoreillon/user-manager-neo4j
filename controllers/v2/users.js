@@ -89,11 +89,7 @@ exports.create_user = async (req, res, next) => {
       throw createHttpError(400, error)
     }
 
-    const {
-      username,
-      password,
-      email_address,
-    } = properties
+    const { username, password, email_address } = properties
 
 
     const password_hashed = await hash_password(password)
@@ -118,6 +114,7 @@ exports.create_user = async (req, res, next) => {
       RETURN user
       `
 
+    // WARNING: email_address is ignored
     const params = { username, password_hashed }
 
     const {records} = await session.run(query, params)
@@ -125,7 +122,7 @@ exports.create_user = async (req, res, next) => {
     // No record implies that the user already existed
     if(!records.length) throw createHttpError(400, `User ${username} already exists`)
 
-    const {properties:user} = records[0].get('user')
+    const { properties: user } = records[0].get('user')
     delete user.password_hashed
 
     console.log(`[Neo4J] User ${username} created`)
@@ -249,7 +246,7 @@ exports.update_password = async (req, res, next) => {
       await passwordUpdateSchema.validateAsync(req.body)
     }
     catch (error) {
-      throw createHttpError(400, error)
+      throw createHttpError(400, error.message)
     }
 
     const {new_password, new_password_confirm} = req.body
@@ -311,23 +308,23 @@ exports.get_users = async (req, res, next) => {
       start_index = 0,
     } = req.query
 
-    const search_exceptions =  [ 'password_hashed', '_id']
 
     const search_query = `
-      // Making a clear transition from previosu queries
-      WITH 1 as dummy
       // Make a list of the keys of each node
       // Additionally, filter out fields that should not be searched
-      MATCH (all_users:User)
-      WITH [key IN KEYS(all_users) WHERE NOT key IN $search_exceptions] AS keys
+      WITH [key IN KEYS(user) WHERE NOT key IN $exceptions] AS keys, user
 
+      // Unwinding
       UNWIND keys as key
-      OPTIONAL MATCH (user:User)
+
+      // Filter nodes by looking for properties
+      WITH key, user
       WHERE toLower(toString(user[key])) CONTAINS toLower($search)
       `
 
+
     const ids_query = `
-      // Making a clear transition from previosu queries
+      // Making a clear transition from previous queries
       WITH 1 as dummy
       UNWIND $ids as id
       OPTIONAL MATCH (user:User {_id: id})
@@ -359,7 +356,7 @@ exports.get_users = async (req, res, next) => {
 
     const parameters = {
         search,
-        search_exceptions,
+        exceptions: [ 'password_hashed', '_id', 'avatar_src'],
         ids,
         start_index,
         batch_size
@@ -368,8 +365,7 @@ exports.get_users = async (req, res, next) => {
     const {records} = await session.run(query, parameters)
 
     const record = records[0]
-
-    if(!record) throw createHttpError(500, `Query failed`)
+    if(!record) throw createHttpError(404, `No user found`)
 
     const users = record.get('users')
 
