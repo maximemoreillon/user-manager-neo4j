@@ -19,22 +19,6 @@ const {
 dotenv.config()
 
 
-function self_only_unless_admin(req, res){
-
-  // THIS NEEDS A REVIEW
-
-  const current_user_is_admin = !!res.locals.user.properties.isAdmin
-
-  if(current_user_is_admin) {
-    return req.body.user_id
-      ?? req.query.user_id
-      ?? req.params.user_id
-      ?? res.locals.user.properties._id
-  }
-  else {
-    res.locals.user.properties._id
-  }
-}
 
 
 function get_user_id_from_query_or_own(req, res){
@@ -109,6 +93,7 @@ exports.create_user = async (req, res) => {
 
       // Set properties
       SET user._id = randomUUID()
+      SET user.creation_date = Date()
       SET user.password_hashed = $password_hashed
       SET user.display_name = $username
 
