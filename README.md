@@ -33,3 +33,8 @@ Note: To target the user currently logged in, use 'self' as ID
 | ADMIN_USERNAME | The username for the administrator account, defaults to 'admin' |
 | ADMIN_PASSWORD | The password for the administrator account, defaults to 'admin' |
 | JWT_SECRET | Secret used to sign Tokens |
+| SMTP_HOST | Host of the SMTP server |
+| SMTP_PORT | PORT of the SMTP server |
+| SMTP_USERNAME | Username for the  SMTP server |
+| SMTP_PASSWORD | Password for the SMTP server |
+| SMTP_FROM | E-mail from |

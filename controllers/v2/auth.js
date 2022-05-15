@@ -4,7 +4,6 @@ const createHttpError = require('http-errors')
 const {
   decode_token,
   generate_token,
-  get_id_of_user,
   compare_password,
   user_query,
   find_user_in_db,
@@ -65,6 +64,9 @@ exports.login = async (req, res, next) => {
 
     // User query
     const {properties: user} = await find_user_in_db(identifier)
+
+    // Activated check
+    if (!user.activated && !user.isAdmin) throw createHttpError(403, `This user is not activated`)
 
     // Lock check
     if(user.locked) throw createHttpError(403, `This account is locked`)

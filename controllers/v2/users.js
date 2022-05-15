@@ -1,40 +1,15 @@
 const createHttpError = require('http-errors')
-const dotenv = require('dotenv')
 const { driver } = require('../../db.js')
-const { passwordUpdateSchema } = require('../../schemas/passwords.js')
 const {
   newUserSchema,
   userUpdateSchema,
   userAdminUpdateSchema
 } = require('../../schemas/users.js')
-
 const {
-  compare_password,
   hash_password,
   user_query,
-  user_id_filter,
-  find_user_by_id,
 } = require('../../utils.js')
 
-dotenv.config()
-
-function self_only_unless_admin(req, res){
-
-  const current_user = res.locals.user
-
-  const current_user_is_admin = !!current_user.isAdmin
-
-  if(current_user_is_admin) {
-    return req.body.user_id
-      ?? req.query.user_id
-      ?? req.params.user_id
-      ?? current_user._id
-
-  }
-  else {
-    return current_user._id
-  }
-}
 
 
 function get_user_id_from_query_or_own(req, res){
@@ -44,7 +19,7 @@ function get_user_id_from_query_or_own(req, res){
 }
 
 
-exports.get_user = async (req, res, next) => {
+exports.read_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -89,14 +64,18 @@ exports.create_user = async (req, res, next) => {
       throw createHttpError(400, error)
     }
 
-    const { username, password, email_address } = properties
+    const { 
+      username, 
+      password, 
+      email_address 
+    } = properties
 
 
     const password_hashed = await hash_password(password)
 
     const query = `
       // MERGE the user node with username as unique
-      MERGE (user:User {username: $username})
+      MERGE (user:User {username: $user_properties.username})
 
       // if the user does not have a uuid, it means the user has not been registered
       // if the user exists, then further execution will be stopped
@@ -105,19 +84,24 @@ exports.create_user = async (req, res, next) => {
 
       // Set properties
       SET user._id = randomUUID()
-      SET user.password_hashed = $password_hashed
-      SET user.display_name = $username
       SET user.creation_date = date()
+      SET user += $user_properties
+
+      // For now, activated is true by default
       SET user.activated = true
 
       // Return the user
       RETURN user
       `
 
-    // WARNING: email_address is ignored
-    const params = { username, password_hashed }
+    const user_properties = {
+      username,
+      email_address,
+      password_hashed,
+      display_name: username,
+    }
 
-    const {records} = await session.run(query, params)
+    const { records } = await session.run(query, { user_properties })
 
     // No record implies that the user already existed
     if(!records.length) throw createHttpError(400, `User ${username} already exists`)
@@ -177,7 +161,7 @@ exports.delete_user = async (req, res, next) => {
 
 }
 
-exports.patch_user = async (req, res, next) => {
+exports.update_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -235,67 +219,8 @@ exports.patch_user = async (req, res, next) => {
 
 }
 
-exports.update_password = async (req, res, next) => {
 
-  const session = driver.session()
-
-  try {
-
-
-    try {
-      await passwordUpdateSchema.validateAsync(req.body)
-    }
-    catch (error) {
-      throw createHttpError(400, error.message)
-    }
-
-    const {new_password, new_password_confirm} = req.body
-
-    // Get current user info
-    let {user_id} = req.params
-    const current_user_id = res.locals.user._id
-    if(user_id === 'self') user_id = current_user_id
-    const user_is_admin = res.locals.user.isAdmin
-
-    // Prevent an user from modifying another's password
-    if(String(user_id) !== String(current_user_id) && !user_is_admin) {
-      throw createHttpError(403, `Unauthorized to modify another user's password`)
-    }
-
-
-    const password_hashed = await hash_password(new_password)
-
-    const query = `
-      ${user_query}
-      SET user.password_hashed = $password_hashed
-      SET user.password_changed = true
-      RETURN user
-      `
-
-    const params = { user_id, password_hashed }
-
-    const {records} = await session.run(query, params)
-
-    if(!records.length) throw createHttpError(404, `User ${user_id} not found`)
-
-    const {properties:user} = records[0].get('user')
-    delete user.password_hashed
-    console.log(`[Neo4J] Password of user ${user_id} updated`)
-    res.send(user)
-
-  }
-  catch (error) {
-    next(error)
-  }
-  finally {
-    session.close()
-  }
-
-
-
-}
-
-exports.get_users = async (req, res, next) => {
+exports.read_users = async (req, res, next) => {
 
   const session = driver.session()
 
