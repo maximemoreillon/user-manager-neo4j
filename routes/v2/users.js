@@ -1,6 +1,6 @@
+const password_router = require('./password.js')
 const { Router } = require('express')
 const { middleware } = require('../../controllers/v2/auth.js')
-const password_router = require('./password')
 const {
   create_user,
   read_users,
@@ -11,16 +11,14 @@ const {
 
 const router = Router()
 
-router.use(middleware)
-
 router.route('/')
-  .post(create_user)
-  .get(read_users)
+  .post(middleware, create_user)
+  .get(middleware, read_users)
 
 router.route('/:user_id')
-  .get(read_user)
-  .delete(delete_user)
-  .patch(update_user)
+  .get(middleware, read_user)
+  .delete(middleware, delete_user)
+  .patch(middleware, update_user)
 
 router.use('/:user_id/password', password_router)
 

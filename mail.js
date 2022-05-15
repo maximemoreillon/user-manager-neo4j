@@ -67,8 +67,6 @@ exports.send_password_reset_email = async ({ url, user }) => {
         const { email_address } = user
         const token = await generate_token(user)
 
-        console.log({ token })
-
         const email = {
             from: SMTP_FROM,
             to: email_address,

@@ -64,14 +64,18 @@ exports.create_user = async (req, res, next) => {
       throw createHttpError(400, error)
     }
 
-    const { username, password, email_address } = properties
+    const { 
+      username, 
+      password, 
+      email_address 
+    } = properties
 
 
     const password_hashed = await hash_password(password)
 
     const query = `
       // MERGE the user node with username as unique
-      MERGE (user:User {username: $username})
+      MERGE (user:User {username: $user_properties.username})
 
       // if the user does not have a uuid, it means the user has not been registered
       // if the user exists, then further execution will be stopped
@@ -80,9 +84,8 @@ exports.create_user = async (req, res, next) => {
 
       // Set properties
       SET user._id = randomUUID()
-      SET user.password_hashed = $password_hashed
-      SET user.display_name = $username
       SET user.creation_date = date()
+      SET user += $user_properties
 
       // For now, activated is true by default
       SET user.activated = true
@@ -91,10 +94,14 @@ exports.create_user = async (req, res, next) => {
       RETURN user
       `
 
-    // WARNING: email_address is ignored
-    const params = { username, password_hashed }
+    const user_properties = {
+      username,
+      email_address,
+      password_hashed,
+      display_name: username,
+    }
 
-    const {records} = await session.run(query, params)
+    const { records } = await session.run(query, { user_properties })
 
     // No record implies that the user already existed
     if(!records.length) throw createHttpError(400, `User ${username} already exists`)

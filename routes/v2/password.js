@@ -1,11 +1,18 @@
 
 const { Router } = require('express')
-const { update_password } = require('../../controllers/v3/password.js')
+const { middleware } = require('../../controllers/v2/auth.js')
+const { 
+    update_password, 
+    request_password_reset 
+} = require('../../controllers/v2/password.js')
 
 const router = Router({ mergeParams: true })
 
 router.route('/')
-    .patch(update_password)
-    .put(update_password)
+    .patch(middleware, update_password)
+    .put(middleware, update_password)
+
+router.route('/reset')
+    .post(request_password_reset)
 
 module.exports = router
