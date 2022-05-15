@@ -30,7 +30,7 @@ exports.register_last_login = async (user_id) => {
 
 exports.retrieve_jwt = (req, res) => new Promise( (resolve, reject) => {
 
-  // Did not have to be a promise
+  // Did not need to be a promise
 
   const jwt = req.headers.authorization?.split(" ")[1]
     || req.headers.authorization

@@ -1,22 +1,27 @@
-const {Router} = require('express')
-const controller = require('../../controllers/v2/users.js')
-const {middleware} = require('../../controllers/v2/auth.js')
+const { Router } = require('express')
+const { middleware } = require('../../controllers/v2/auth.js')
+const password_router = require('./password')
+const {
+  create_user,
+  read_users,
+  read_user,
+  update_user,
+  delete_user,
+} = require('../../controllers/v2/users.js')
 
 const router = Router()
 
 router.use(middleware)
 
 router.route('/')
-  .post(controller.create_user)
-  .get(controller.get_users)
+  .post(create_user)
+  .get(read_users)
 
 router.route('/:user_id')
-  .get(controller.get_user)
-  .delete(controller.delete_user)
-  .patch(controller.patch_user)
+  .get(read_user)
+  .delete(delete_user)
+  .patch(update_user)
 
-router.route('/:user_id/password')
-  .put(controller.update_password)
-  .patch(controller.update_password)
+router.use('/:user_id/password', password_router)
 
 module.exports = router

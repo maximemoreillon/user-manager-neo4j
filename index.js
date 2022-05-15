@@ -3,9 +3,10 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
-const {version, author} = require('./package.json')
-const {create_admin_if_not_exists} = require('./controllers/v1/users.js')
-const {commit} = require('./commit.json')
+const { version, author } = require('./package.json')
+const { create_admin_if_not_exists } = require('./controllers/v1/users.js')
+const { commit } = require('./commit.json')
+const { smtp } = require('./mail.js')
 const {
   url: neo4j_url,
   get_connected,
@@ -14,7 +15,7 @@ const {
 
 dotenv.config()
 
-console.log(`== User manager (Neo4J edition) v${version} ==`)
+console.log(`== User manager (Neo4J version) v${version} ==`)
 
 
 db_init()
@@ -40,6 +41,7 @@ app.get('/', (req, res) => {
       url: neo4j_url,
       connected: get_connected(),
     },
+    smtp,
   })
 })
 
@@ -56,7 +58,7 @@ app.use((error, req, res, next) => {
 })
 
 app.listen(APP_PORT, () => {
-  console.log(`[Express] Listening on *:${APP_PORT}`);
+  console.log(`[Express] Listening on *:${APP_PORT}`)
 })
 
 
