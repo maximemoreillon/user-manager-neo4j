@@ -5,13 +5,7 @@ const cors = require('cors')
 const dotenv = require('dotenv')
 const { version, author } = require('./package.json')
 const { create_admin_if_not_exists } = require('./controllers/v1/users.js')
-const { commit } = require('./commit.json')
-const { smtp } = require('./mail.js')
-const {
-  url: neo4j_url,
-  get_connected,
-  init: db_init
-} = require('./db.js')
+const { init: db_init } = require('./db.js')
 
 dotenv.config()
 
@@ -30,21 +24,6 @@ const {
 const app = express()
 app.use(bodyParser.json())
 app.use(cors())
-
-app.get('/', (req, res) => {
-  res.send({
-    application_name: 'User manager (Neo4J version)',
-    author,
-    version,
-    commit,
-    neo4j: {
-      url: neo4j_url,
-      connected: get_connected(),
-    },
-    smtp,
-  })
-})
-
 app.use('/', require('./routes/v1/index.js'))
 app.use('/v1', require('./routes/v1/index.js'))
 app.use('/v2', require('./routes/v2/index.js'))
