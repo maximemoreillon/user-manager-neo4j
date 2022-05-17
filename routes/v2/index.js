@@ -4,7 +4,11 @@ const users_router = require('./users.js')
 const { commit } = require('../../commit.json')
 const { smtp } = require('../../mail.js')
 const { version, author } = require('../../package.json')
-const { url: neo4j_url, get_connected, } = require('../../db.js')
+const { 
+    url: neo4j_url, 
+    get_connected, 
+    get_initialized
+} = require('../../db.js')
 
 const router = Router()
 
@@ -17,6 +21,7 @@ router.get('/', (req, res) => {
         neo4j: {
             url: neo4j_url,
             connected: get_connected(),
+            initialized: get_initialized()
         },
         smtp,
     })

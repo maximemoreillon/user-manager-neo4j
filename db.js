@@ -115,7 +115,7 @@ const create_db_constraints = async () => {
 }
 
 const init = async () => {
-  console.log('[Neo4J] Initializing DB')
+  console.log('[Neo4J] Initializing DB...')
 
   try {
     await create_admin_if_not_exists()
@@ -123,6 +123,7 @@ const init = async () => {
     await set_ids_to_nodes_without_ids()
     await create_db_constraints()
     initialized = true
+    console.error(`[Neo4J] DB initialized`)
   } 
   catch (error) {
     console.error(`[Neo4J] DB init failed`)
