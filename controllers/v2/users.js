@@ -5,10 +5,8 @@ const {
   userUpdateSchema,
   userAdminUpdateSchema
 } = require('../../schemas/users.js')
-const {
-  hash_password,
-  user_query,
-} = require('../../utils.js')
+const { user_query } = require('../../utils/utils.js')
+const { hash_password } = require('../../utils/passwords.js')
 
 
 
@@ -52,8 +50,10 @@ exports.create_user = async (req, res, next) => {
   const session = driver.session()
 
   try {
+
+    const current_user = res.locals.user
     // Currently, only admins can create accounts
-    if(!res.locals.user.isAdmin) throw createHttpError(403, `Only administrators can create users`)
+    if (!current_user.isAdmin) throw createHttpError(403, `Only administrators can create users`)
 
     const properties = req.body
 
@@ -74,18 +74,12 @@ exports.create_user = async (req, res, next) => {
     const password_hashed = await hash_password(password)
 
     const query = `
-      // MERGE the user node with username as unique
-      MERGE (user:User {username: $user_properties.username})
-
-      // if the user does not have a uuid, it means the user has not been registered
-      // if the user exists, then further execution will be stopped
-      WITH user
-      WHERE NOT EXISTS(user._id)
+      CREATE (user:User)
 
       // Set properties
+      SET user += $user_properties
       SET user._id = randomUUID()
       SET user.creation_date = date()
-      SET user += $user_properties
 
       // For now, activated is true by default
       SET user.activated = true

@@ -2,11 +2,8 @@ const createHttpError = require('http-errors')
 const { passwordUpdateSchema } = require('../../schemas/passwords.js')
 const { driver } = require('../../db.js')
 const { send_password_reset_email } = require('../../mail.js')
-const {
-    hash_password,
-    user_query,
-} = require('../../utils.js')
-
+const { user_query } = require('../../utils/utils.js')
+const { hash_password } = require('../../utils/passwords.js')
 
 exports.update_password = async (req, res, next) => {
 

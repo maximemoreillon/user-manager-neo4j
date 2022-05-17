@@ -1,8 +1,7 @@
-const bcrypt = require('bcrypt')
 const createHttpError = require('http-errors')
 const jwt = require('jsonwebtoken')
 const Cookies = require('cookies')
-const {driver} = require('./db.js')
+const { driver } = require('../db.js')
 
 
 exports.register_last_login = async (user_id) => {
@@ -101,8 +100,6 @@ exports.decode_token = (token) => new Promise ( (resolve, reject) => {
   })
 })
 
-exports.compare_password = (password_plain, password_hashed) => bcrypt.compare(password_plain, password_hashed)
-exports.hash_password = (password_plain) => bcrypt.hash(password_plain, 10)
 
 
 
@@ -138,3 +135,4 @@ const find_user_in_db = (identifier) => new Promise ( (resolve, reject) => {
 
 })
 exports.find_user_in_db = find_user_in_db
+

@@ -8,13 +8,10 @@ const {
   } = require('../../schemas/users.js')
 const {
   get_current_user_id,
-  error_handling,
-  compare_password,
-  hash_password,
   user_query,
-  user_id_filter,
-  find_user_by_id,
-} = require('../../utils.js')
+} = require('../../utils/utils.js')
+const { hash_password } = require('../../utils/passwords.js')
+const createHttpError = require('http-errors')
 
 dotenv.config()
 
@@ -28,7 +25,7 @@ function get_user_id_from_query_or_own(req, res){
 }
 
 
-exports.get_user = async (req, res) => {
+exports.get_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -39,7 +36,7 @@ exports.get_user = async (req, res) => {
 
     const {records} = await session.run(query, {user_id})
 
-    if(!records.length) throw {code: 404, message: `User ${user_id} not found`}
+    if (!records.length) throw createHttpError(404, `User ${user_id} not found`)
 
     const user = records[0].get('user')
 
@@ -47,21 +44,21 @@ exports.get_user = async (req, res) => {
     res.send(user)
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
   }
 }
 
-exports.create_user = async (req, res) => {
+exports.create_user = async (req, res, next) => {
 
   const session = driver.session()
 
   try {
     // Currently, only admins can create accounts
     if(!res.locals.user.properties.isAdmin){
-      throw {code: 403, message: `Only administrators can create users`, tag: 'Auth'}
+      throw createHttpError(403, `Only administrators can create users`)
     }
 
     const properties = req.body
@@ -70,7 +67,7 @@ exports.create_user = async (req, res) => {
       await newUserSchema.validateAsync(properties)
     }
     catch (error) {
-      throw {code: 400, message: error}
+      throw createHttpError(400, error)
     }
 
     const {
@@ -109,7 +106,7 @@ exports.create_user = async (req, res) => {
 
 
     // No record implies that the user already existed
-    if(!records.length) throw {code: 403, message: `User ${username} already exists`, tag: 'Neo4J'}
+    if (!records.length) throw createHttpError(400, `User ${username} already exists`) 
 
     const user = records[0].get('user')
     console.log(`[Neo4J] User ${username} created`)
@@ -117,7 +114,7 @@ exports.create_user = async (req, res) => {
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -125,7 +122,7 @@ exports.create_user = async (req, res) => {
 
 }
 
-exports.delete_user = async (req, res) => {
+exports.delete_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -137,7 +134,7 @@ exports.delete_user = async (req, res) => {
     // Prevent normal users to create a user
     // TODO: allow users to delete self
     if(!current_user.properties.isAdmin){
-      throw {code: 403, message: 'Unauthorized'}
+      throw createHttpError(403, `Only administrators can delete users`)
     }
 
     const user_id = req.params.user_id
@@ -151,14 +148,14 @@ exports.delete_user = async (req, res) => {
 
     const {records} = await session.run(query, { user_id })
 
-    if(!records.length) throw {code: 404, message: `User ${user_id} not found`, tag: 'Neo4J'}
+    if (!records.length) throw createHttpError(404, `User ${user_id} Not found`) 
 
     console.log(`[Neo4J] User ${user_id} deleted`)
     res.send({user_id})
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -166,7 +163,7 @@ exports.delete_user = async (req, res) => {
 
 }
 
-exports.patch_user = async (req, res) => {
+exports.patch_user = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -181,7 +178,7 @@ exports.patch_user = async (req, res) => {
 
     // Prevent an user from modifying another's password
     if(String(user_id) !== String(current_user_id) && !user_is_admin) {
-      return res.status(403).send(`Unauthorized to modify another user`)
+      throw createHttpError(403, `Unauthorized to modify another user`)
     }
 
     const properties = req.body
@@ -191,7 +188,7 @@ exports.patch_user = async (req, res) => {
       else await userUpdateSchema.validateAsync(properties)
     }
     catch (error) {
-      throw {code: 403, mesage: error.message, tag: 'Joi'}
+      throw createHttpError(403, error)
     }
 
 
@@ -205,7 +202,7 @@ exports.patch_user = async (req, res) => {
 
     const {records} = await session.run(query,parameters)
 
-    if(!records.length) throw {code: 404, mesage: `User ${user_id} not found`, tag: 'Neo4J'}
+    if (!records.length) throw createHttpError(404, `User ${user_id} Not found`) 
 
     const user = records[0].get('user')
 
@@ -218,7 +215,7 @@ exports.patch_user = async (req, res) => {
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -226,7 +223,7 @@ exports.patch_user = async (req, res) => {
 
 }
 
-exports.update_password = async (req, res) => {
+exports.update_password = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -236,7 +233,7 @@ exports.update_password = async (req, res) => {
     try {
       await passwordUpdateSchema.validateAsync(req.body)
     } catch (error) {
-      throw {code: 400, message: error}
+      throw createHttpError(400, error)
     }
 
     const {new_password, new_password_confirm} = req.body
@@ -248,7 +245,7 @@ exports.update_password = async (req, res) => {
 
     // Prevent an user from modifying another's password
     if(String(user_id) !== String(current_user_id) && !user_is_admin) {
-      return res.status(403).send(`Unauthorized to modify another user's password`)
+      throw createHttpError(403, `Unauthorized to modify another user's password`) 
     }
 
 
@@ -265,7 +262,7 @@ exports.update_password = async (req, res) => {
 
     const {records} = await session.run(query, params)
 
-    if(!records.length) throw `User ${user_id} not found`
+    if (!records.length) throw createHttpError(404, `User ${user_id} Not found`) 
 
     const user = records[0].get('user')
     delete user.properties.password_hashed
@@ -274,7 +271,7 @@ exports.update_password = async (req, res) => {
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
@@ -284,7 +281,7 @@ exports.update_password = async (req, res) => {
 
 }
 
-exports.get_users = async (req, res) => {
+exports.get_users = async (req, res, next) => {
 
   const session = driver.session()
 
@@ -349,63 +346,10 @@ exports.get_users = async (req, res) => {
 
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
   finally {
     session.close()
   }
 
 }
-
-const create_admin_if_not_exists = async () => {
-
-  console.log(`[Neo4J] Creating admin account`)
-
-  const session = driver.session()
-
-  try {
-    const {
-      DEFAULT_ADMIN_USERNAME: admin_username = 'admin',
-      DEFAULT_ADMIN_PASSWORD: admin_password = 'admin',
-    } = process.env
-
-
-    const password_hashed = await hash_password(admin_password)
-
-    const query = `
-      // Find the administrator account or create it if it does not exist
-      MERGE (administrator:User {username:$admin_username})
-
-      // Check if the administrator account is missing its password
-      // If the administrator account does not have a password (newly created), set it
-      WITH administrator
-      WHERE NOT EXISTS(administrator.password_hashed)
-      SET administrator.password_hashed = $password_hashed
-      SET administrator._id = randomUUID() // THIS IS IMPORTANT
-      SET administrator.isAdmin = true
-
-      // Set some additional properties
-      SET administrator.display_name = 'Administrator'
-
-      // Return the account
-      RETURN administrator
-      `
-
-    const {records} = await session.run(query, { admin_username, password_hashed })
-
-    if(records.length) console.log(`[Neo4J] Admin creation: admin account created`)
-    else console.log(`[Neo4J] Admin creation: admin already existed`)
-
-
-
-  } catch (error) {
-
-    console.log(`[Neo4J] Admin creation failed, retrying in 10s...`, error)
-    setTimeout(create_admin_if_not_exists, 10000)
-
-  } finally {
-    session.close()
-  }
-}
-
-exports.create_admin_if_not_exists = create_admin_if_not_exists

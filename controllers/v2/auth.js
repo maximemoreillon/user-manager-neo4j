@@ -1,15 +1,15 @@
-const {driver} = require('../../db.js')
 const dotenv = require('dotenv')
 const createHttpError = require('http-errors')
+const { driver } = require('../../db.js')
+const { compare_password } = require('../../utils/passwords.js')
 const {
   decode_token,
   generate_token,
-  compare_password,
   user_query,
   find_user_in_db,
   retrieve_jwt,
   register_last_login,
-} = require('../../utils.js')
+} = require('../../utils/utils.js')
 
 dotenv.config()
 

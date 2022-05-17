@@ -3,8 +3,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
-const { version, author } = require('./package.json')
-const { create_admin_if_not_exists } = require('./controllers/v1/users.js')
+const { version } = require('./package.json')
 const { init: db_init } = require('./db.js')
 
 dotenv.config()
@@ -13,7 +12,6 @@ console.log(`== User manager (Neo4J version) v${version} ==`)
 
 
 db_init()
-create_admin_if_not_exists()
 
 // Port configuration
 const {
