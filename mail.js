@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer')
 const dotenv = require('dotenv')
-const { generate_token } = require('./utils/utils.js')
+const { generate_token } = require('./utils/users.js')
 
 dotenv.config()
 

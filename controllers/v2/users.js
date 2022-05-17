@@ -1,12 +1,12 @@
 const createHttpError = require('http-errors')
 const { driver } = require('../../db.js')
+const { user_query } = require('../../utils/users.js')
+const { hash_password } = require('../../utils/passwords.js')
 const {
   newUserSchema,
   userUpdateSchema,
   userAdminUpdateSchema
 } = require('../../schemas/users.js')
-const { user_query } = require('../../utils/utils.js')
-const { hash_password } = require('../../utils/passwords.js')
 
 
 

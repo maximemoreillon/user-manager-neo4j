@@ -3,8 +3,6 @@ const dotenv = require('dotenv')
 
 const { hash_password } = require('./utils/passwords.js')
 
-
-
 dotenv.config()
 
 const {
@@ -13,13 +11,15 @@ const {
   NEO4J_PASSWORD = 'neo4j',
 } = process.env
 
+let connected = false
+let initialized = false
+
 const auth = neo4j.auth.basic( NEO4J_USERNAME, NEO4J_PASSWORD )
 
 const options = { disableLosslessIntegers: true }
 
 const driver = neo4j.driver( NEO4J_URL, auth, options )
 
-let connected = false
 
 const create_admin_if_not_exists = async () => {
 
@@ -84,7 +84,6 @@ const set_ids_to_nodes_without_ids = async () => {
     const { records } = await session.run(id_setting_query)
     const count = records[0].get('count')
     console.log(`[Neo4J] ID of ${count} nodes have been set`)
-    connected = true
   }
   catch (error) {
     console.error(`Setting IDs failed`)
@@ -119,10 +118,11 @@ const init = async () => {
   console.log('[Neo4J] Initializing DB')
 
   try {
-    await create_db_constraints()
     await create_admin_if_not_exists()
-    await set_ids_to_nodes_without_ids()
     connected = true
+    await set_ids_to_nodes_without_ids()
+    await create_db_constraints()
+    initialized = true
   } 
   catch (error) {
     console.error(`[Neo4J] DB init failed`)
@@ -133,7 +133,8 @@ const init = async () => {
 
 }
 
-exports.init = init
-exports.get_connected = () => connected
 exports.driver = driver
 exports.url = NEO4J_URL
+exports.init = init
+exports.get_connected = () => connected
+exports.get_initialized = () => initialized

@@ -1,5 +1,7 @@
-const {driver} = require('../../db.js')
+const createHttpError = require('http-errors')
 const dotenv = require('dotenv')
+const { driver } = require('../../db.js')
+const { hash_password } = require('../../utils/passwords.js')
 const { passwordUpdateSchema } = require('../../schemas/passwords.js')
 const {
   newUserSchema,
@@ -9,9 +11,7 @@ const {
 const {
   get_current_user_id,
   user_query,
-} = require('../../utils/utils.js')
-const { hash_password } = require('../../utils/passwords.js')
-const createHttpError = require('http-errors')
+} = require('../../utils/users.js')
 
 dotenv.config()
 

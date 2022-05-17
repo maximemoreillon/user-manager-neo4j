@@ -4,12 +4,13 @@ const { compare_password } = require('../../utils/passwords.js')
 const {
   decode_token,
   generate_token,
-  error_handling,
+  retrieve_jwt,
+} = require('../../utils/tokens.js')
+const {
   user_query,
   find_user_in_db,
-  retrieve_jwt,
   register_last_login,
-} = require('../../utils/utils.js')
+} = require('../../utils/users.js')
 
 dotenv.config()
 
@@ -44,7 +45,7 @@ exports.middleware = async (req, res, next) => {
 
 }
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
 
   try {
 
@@ -80,7 +81,7 @@ exports.login = async (req, res) => {
     console.log(`[Auth] Successful login from user identified as ${identifier}`)
   }
   catch (error) {
-    error_handling(error, res)
+    next(error)
   }
 
 }
