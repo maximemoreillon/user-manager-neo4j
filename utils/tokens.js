@@ -1,5 +1,5 @@
 const Cookies = require('cookies')
-const dotenv = requiree('dotenv')
+const dotenv = require('dotenv')
 const jwt = require('jsonwebtoken')
 const { get_id_of_user } = require('./users.js')
 
