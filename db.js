@@ -94,7 +94,7 @@ const set_ids_to_nodes_without_ids = async () => {
   }
 }
 
-const create_db_constraints = async () => {
+const create_constraints = async () => {
 
   const session = driver.session()
 
@@ -121,15 +121,14 @@ const init = async () => {
     await create_admin_if_not_exists()
     connected = true
     await set_ids_to_nodes_without_ids()
-    await create_db_constraints()
+    await create_constraints()
     initialized = true
     console.error(`[Neo4J] DB initialized`)
   } 
   catch (error) {
-    console.error(`[Neo4J] DB init failed`)
     console.error(error)
-    console.error(`[Neo4J] Retrying in 5s...`)
-    setTimeout(init, 5000)
+    console.log(`[Neo4J] init failed, retrying in 10s`)
+    setTimeout(init, 10000)
   }
 
 }

@@ -1,6 +1,13 @@
 const Cookies = require('cookies')
+const dotenv = requiree('dotenv')
 const jwt = require('jsonwebtoken')
 const { get_id_of_user } = require('./users.js')
+
+dotenv.config()
+
+const { JWT_SECRET } = process.env
+
+if (!JWT_SECRET) throw new Error(`Token secret not set`)
 
 exports.retrieve_jwt = (req, res) => new Promise((resolve, reject) => {
 
@@ -20,9 +27,6 @@ exports.retrieve_jwt = (req, res) => new Promise((resolve, reject) => {
 
 exports.generate_token = (user) => new Promise((resolve, reject) => {
 
-    const JWT_SECRET = process.env.JWT_SECRET
-    if (!JWT_SECRET) return reject({ code: 500, message: `Token secret not set` })
-
     const user_id = get_id_of_user(user).toString() // forcing string
     const token_content = { user_id }
 
@@ -34,12 +38,8 @@ exports.generate_token = (user) => new Promise((resolve, reject) => {
 
 exports.decode_token = (token) => new Promise((resolve, reject) => {
 
-    const JWT_SECRET = process.env.JWT_SECRET
-    if (!JWT_SECRET) return reject({ code: 500, message: `Token secret not set` })
-
     jwt.verify(token, JWT_SECRET, (error, decoded_token) => {
-        if (error) return reject({ code: 403, message: `Invalid JWT` })
-
+        if (error) return reject(createHttpError(403, `Invalid JWT`))
         resolve(decoded_token)
     })
 })

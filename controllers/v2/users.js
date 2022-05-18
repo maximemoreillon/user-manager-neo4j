@@ -67,7 +67,8 @@ exports.create_user = async (req, res, next) => {
     const { 
       username, 
       password, 
-      email_address 
+      email_address,
+      display_name
     } = properties
 
 
@@ -85,25 +86,22 @@ exports.create_user = async (req, res, next) => {
       SET user.activated = true
 
       // Return the user
-      RETURN user
+      RETURN properties(user) as user
       `
 
     const user_properties = {
       username,
       email_address,
       password_hashed,
-      display_name: username,
+      display_name: display_name || username || email_address,
     }
 
     const { records } = await session.run(query, { user_properties })
 
-    // No record implies that the user already existed
-    if(!records.length) throw createHttpError(400, `User ${username} already exists`)
-
-    const { properties: user } = records[0].get('user')
+    const user = records[0].get('user')
     delete user.password_hashed
 
-    console.log(`[Neo4J] User ${username} created`)
+    console.log(`[Neo4J] User ${user._id} created`)
     res.send(user)
 
   }
