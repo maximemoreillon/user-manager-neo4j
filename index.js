@@ -3,6 +3,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
+const apiMetrics = require('prometheus-api-metrics')
 const { version } = require('./package.json')
 const { init: db_init } = require('./db.js')
 
@@ -20,8 +21,11 @@ const {
 
 // Express configuration
 const app = express()
+
 app.use(bodyParser.json())
 app.use(cors())
+app.use(apiMetrics())
+
 app.use('/', require('./routes/v1/index.js'))
 app.use('/v1', require('./routes/v1/index.js'))
 app.use('/v2', require('./routes/v2/index.js'))

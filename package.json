@@ -1,6 +1,6 @@
 {
   "name": "user_manager_neo4j",
-  "version": "4.2.3",
+  "version": "4.3.0",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -21,7 +21,9 @@
     "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
     "neo4j-driver": "^4.4.5",
-    "nodemailer": "^6.7.5"
+    "nodemailer": "^6.7.5",
+    "prom-client": "^14.0.1",
+    "prometheus-api-metrics": "^3.2.1"
   },
   "devDependencies": {
     "chai": "^4.3.6",
