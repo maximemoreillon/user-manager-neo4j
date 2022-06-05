@@ -36,7 +36,7 @@ test:
   stage: test
   tags:
     - dind
-  coverage: All files\s*\|\s*([0-9.]+)
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
   before_script:
     - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
     # Creating network for TDD
