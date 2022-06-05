@@ -1,14 +1,14 @@
 # User manager (Neo4J)
 
-A simple user management and authentication service built around a Neo4J database
-
-Project page: https://cms.maximemoreillon.com/articles/585
-
-Container image on Docker Hub: https://hub.docker.com/repository/docker/moreillon/user-manager
-
 [![pipeline status](https://gitlab.com/moreillon_k8s/user_manager/badges/master/pipeline.svg)](https://gitlab.com/moreillon_k8s/user_manager/)
 [![coverage report](https://gitlab.com/moreillon_k8s/user_manager/badges/master/coverage.svg)](https://gitlab.com/moreillon_k8s/user_manager/)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/user-manager-neo4j)](https://artifacthub.io/packages/search?repo=user-manager-neo4j)
+
+
+
+A simple user management and authentication service built around a Neo4J database
+
+[Project page](https://cms.maximemoreillon.com/articles/585)
 
 ## API
 | Route | Method | query/body | Description |
@@ -38,3 +38,7 @@ Note: To target the user currently logged in, use 'self' as ID
 | SMTP_USERNAME | Username for the  SMTP server |
 | SMTP_PASSWORD | Password for the SMTP server |
 | SMTP_FROM | E-mail from |
+
+## Docker image
+
+[![dockeri.co](https://dockeri.co/image/moreillon/user-manager)](https://hub.docker.com/r/moreillon/user-manager)
