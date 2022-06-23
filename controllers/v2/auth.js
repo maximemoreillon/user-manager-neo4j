@@ -81,7 +81,7 @@ exports.login = async (req, res, next) => {
 
     const jwt = await generate_token(user)
 
-    res.send({jwt})
+    res.send({jwt, user})
 
     console.log(`[Auth] Successful login from user identified as ${identifier}`)
   }
