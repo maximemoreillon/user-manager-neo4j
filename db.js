@@ -12,7 +12,6 @@ const {
 } = process.env
 
 let connected = false
-let initialized = false
 
 const auth = neo4j.auth.basic( NEO4J_USERNAME, NEO4J_PASSWORD )
 
@@ -20,6 +19,22 @@ const options = { disableLosslessIntegers: true }
 
 const driver = neo4j.driver( NEO4J_URL, auth, options )
 
+const get_connection_status = async () => {
+  const session = driver.session()
+  try {
+    console.log(`[Neo4J] Testing connection...`)
+    await session.run('RETURN 1')
+    console.log(`[Neo4J] Connection successful`)
+    return true
+  }
+  catch (e) {
+    console.log(`[Neo4J] Connection failed`)
+    return false
+  }
+  finally {
+    session.close()
+  }
+}
 
 const create_admin_if_not_exists = async () => {
 
@@ -115,21 +130,24 @@ const create_constraints = async () => {
 }
 
 const init = async () => {
-  console.log('[Neo4J] Initializing DB...')
 
-  try {
-    await create_admin_if_not_exists()
+
+  if (await get_connection_status()) {
     connected = true
-    await set_ids_to_nodes_without_ids()
-    await create_constraints()
-    initialized = true
-    console.error(`[Neo4J] DB initialized`)
-  } 
-  catch (error) {
-    console.error(error)
-    console.log(`[Neo4J] init failed, retrying in 10s`)
+
+    try {
+      console.log('[Neo4J] Initializing DB')
+      await create_admin_if_not_exists()
+      await set_ids_to_nodes_without_ids()
+      await create_constraints()
+    }
+    catch (error) {
+      console.log(error)
+    }
+  } else {
     setTimeout(init, 10000)
   }
+
 
 }
 
@@ -137,4 +155,3 @@ exports.driver = driver
 exports.url = NEO4J_URL
 exports.init = init
 exports.get_connected = () => connected
-exports.get_initialized = () => initialized
