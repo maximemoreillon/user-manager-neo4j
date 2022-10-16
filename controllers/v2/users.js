@@ -17,33 +17,7 @@ function get_user_id_from_query_or_own(req, res){
 }
 
 
-exports.read_user = async (req, res, next) => {
 
-  const session = driver.session()
-
-  try {
-    const user_id = get_user_id_from_query_or_own(req, res)
-
-    const query = `
-      ${user_query}
-      RETURN properties(user) as user
-      `
-    const {records} = await session.run(query, {user_id})
-
-    if(!records.length) throw createHttpError(404, `User ${user_id} not found`)
-
-    const user = records[0].get('user')
-
-    console.log(`[Neo4J] User ${user_id} queried`)
-    res.send(user)
-  }
-  catch (error) {
-    next(error)
-  }
-  finally {
-    session.close()
-  }
-}
 
 exports.create_user = async (req, res, next) => {
 
@@ -112,6 +86,135 @@ exports.create_user = async (req, res, next) => {
     session.close()
   }
 
+}
+
+
+exports.read_users = async (req, res, next) => {
+
+  const session = driver.session()
+
+  try {
+
+    const {
+      search,
+      ids,
+      batch_size = 100,
+      start_index = 0,
+    } = req.query
+
+
+    const search_query = `
+      // Make a list of the keys of each node
+      // Additionally, filter out fields that should not be searched
+      WITH [key IN KEYS(user) WHERE NOT key IN $exceptions] AS keys
+
+      // Unwinding all searchable keys
+      UNWIND keys as key
+
+      // Filter nodes by looking for properties
+      WITH key
+      OPTIONAL MATCH (user:User)
+      WHERE toLower(toString(user[key])) CONTAINS toLower($search)
+      `
+
+
+    const ids_query = `
+      // Discarding previous queries
+      WITH 1 as dummy
+
+      UNWIND $ids as id
+      OPTIONAL MATCH (user:User {_id: id})
+      `
+
+
+    const query = `
+
+      MATCH (user:User)
+      ${search ? search_query : ''}
+
+      ${ids ? ids_query : ''}
+
+      // Aggregation
+      WITH
+        COLLECT(DISTINCT PROPERTIES(user)) as users,
+        COUNT(DISTINCT user) as count,
+        toInteger($start_index) as start_index,
+        toInteger($batch_size) as batch_size,
+        (toInteger($start_index)+toInteger($batch_size)) as end_index
+
+      // Batching
+      RETURN
+        count,
+        users[start_index..end_index] AS users,
+        start_index,
+        batch_size
+      `
+
+    const parameters = {
+      search,
+      exceptions: ['password_hashed', '_id', 'avatar_src'],
+      ids,
+      start_index,
+      batch_size
+    }
+
+    const { records } = await session.run(query, parameters)
+
+    const record = records[0]
+
+    // Would be better to return 200 with an exmpty set...
+    if (!record) throw createHttpError(500, `Query did not return any record`)
+
+    const users = record.get('users')
+
+    // Delete passwords from users
+    users.forEach(user => { delete user.password_hashed })
+
+    const response = {
+      batch_size: record.get('batch_size'),
+      start_index: record.get('start_index'),
+      count: record.get('count'),
+      users,
+    }
+    console.log(`[Neo4j] Users queried`)
+
+    res.send(response)
+  }
+  catch (error) {
+    next(error)
+  }
+  finally {
+    session.close()
+  }
+
+}
+
+exports.read_user = async (req, res, next) => {
+
+  const session = driver.session()
+
+  try {
+    const user_id = get_user_id_from_query_or_own(req, res)
+
+    const query = `
+      ${user_query}
+      RETURN properties(user) as user
+      `
+    const { records } = await session.run(query, { user_id })
+
+    if (!records.length) throw createHttpError(404, `User ${user_id} not found`)
+
+    const user = records[0].get('user')
+
+    console.log(`[Neo4J] User ${user_id} queried`)
+    res.send(user)
+  }
+  catch (error) {
+    next(error)
+  }
+  finally {
+    session.close()
+  }
 }
 
 exports.delete_user = async (req, res, next) => {
@@ -212,100 +315,3 @@ exports.update_user = async (req, res, next) => {
 }
 
 
-exports.read_users = async (req, res, next) => {
-
-  const session = driver.session()
-
-  try {
-
-    const {
-      search,
-      ids,
-      batch_size = 100,
-      start_index = 0,
-    } = req.query
-
-
-    const search_query = `
-      // Make a list of the keys of each node
-      // Additionally, filter out fields that should not be searched
-      WITH [key IN KEYS(user) WHERE NOT key IN $exceptions] AS keys, user
-
-      // Unwinding
-      UNWIND keys as key
-
-      // Filter nodes by looking for properties
-      WITH key, user
-      WHERE toLower(toString(user[key])) CONTAINS toLower($search)
-      `
-
-
-    const ids_query = `
-      // Making a clear transition from previous queries
-      WITH 1 as dummy
-      UNWIND $ids as id
-      OPTIONAL MATCH (user:User {_id: id})
-      `
-
-
-    const query = `
-
-      MATCH (user:User)
-      ${search ? search_query : ''}
-      ${ids ? ids_query : ''}
-
-
-      // Aggregation
-      WITH
-        COLLECT(DISTINCT properties(user)) as users,
-        COUNT(DISTINCT user) as count,
-        toInteger($start_index) as start_index,
-        toInteger($batch_size) as batch_size,
-        (toInteger($start_index)+toInteger($batch_size)) as end_index
-
-      // Batching
-      RETURN
-        count,
-        users[start_index..end_index] AS users,
-        start_index,
-        batch_size
-      `
-
-    const parameters = {
-        search,
-        exceptions: [ 'password_hashed', '_id', 'avatar_src'],
-        ids,
-        start_index,
-        batch_size
-      }
-
-    const {records} = await session.run(query, parameters)
-
-    const record = records[0]
-    
-    // Would be better to return 200 with an exmpty set...
-    if(!record) throw createHttpError(404, `No user found`)
-
-    const users = record.get('users')
-
-    // Delete passwords from users
-    users.forEach(user => { delete user.password_hashed })
-
-    const response =  {
-      batch_size: record.get('batch_size'),
-      start_index: record.get('start_index'),
-      count: record.get('count'),
-      users,
-    }
-    console.log(`[Neo4j] Users queried`)
-
-    res.send(response)
-  }
-  catch (error) {
-    next(error)
-  }
-  finally {
-    session.close()
-  }
-
-}

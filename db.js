@@ -120,7 +120,7 @@ const create_constraints = async () => {
     console.log(`[Neo4J] Created constraints`)
   }
   catch (error) {
-    console.error(`Creating contraints failed`)
+    console.error(`[Neo4J] Creating contraints failed`)
     throw error
   }
   finally {
