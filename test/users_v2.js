@@ -124,7 +124,8 @@ describe("/v2/users", () => {
         .query({ search: 'opasdijkopasdik' })
         .set('Authorization', `Bearer ${jwt}`)
 
-      expect(status).to.equal(404)
+      expect(status).to.equal(200)
+      expect(body.users.length).to.equal(0)
     })
 
     it("Should not allow the anonymous query of all users", async () => {
