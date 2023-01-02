@@ -1,0 +1,45 @@
+version: "3.7"
+
+services:
+  neo4j:
+    image: neo4j:4.4.16
+    logging:
+      driver: none
+    environment:
+      NEO4J_AUTH: neo4j/keyboardcat
+    networks:
+      - user-manager
+
+  user-manager-back:
+    image: moreillon/user-manager
+    environment:
+      NEO4J_URL: bolt://neo4j
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: keyboardcat
+      JWT_SECRET: banana
+    networks:
+      - user-manager
+    ports:
+      - 7071:80
+
+  user-manager-front:
+    image: moreillon/user-manager-front
+    logging:
+      driver: none
+    environment:
+      VUE_APP_USER_MANAGER_API_URL: /proxy/api
+    networks:
+      - user-manager
+
+  proxy:
+    image: moreillon/api-proxy
+    environment:
+      PROXY_API: http://user-manager-back/v2
+      PROXY_ROOT: http://user-manager-front
+    ports:
+      - 8081:80
+    networks:
+      - user-manager
+
+networks:
+  user-manager:
