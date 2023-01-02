@@ -50,7 +50,7 @@ test:
       --network ${TEST_NETWORK}
       --hostname ${TEST_DB}
       --env NEO4J_AUTH=none
-      neo4j
+      neo4j:4.4.16
     - sleep 120 # Wait for Neo4J to become available
   script:
     # Run tests
@@ -72,7 +72,6 @@ test:
     - docker push ${CONTAINER_IMAGE_TAGGED}
     - docker push ${CONTAINER_IMAGE_LATEST}
 
-
 deploy:
   stage: deploy
   tags:
@@ -83,4 +82,3 @@ deploy:
     - kubectl config use-context moreillon_ci/moreillon_k8s/kubernetes-agent:cloud
   script:
     - envsubst < kubernetes_manifest.yml | kubectl apply -n ${KUBERNETES_NAMESPACE} -f -
-
