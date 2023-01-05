@@ -9,6 +9,8 @@ const {
   NEO4J_URL = "bolt://neo4j:7687",
   NEO4J_USERNAME = "neo4j",
   NEO4J_PASSWORD = "neo4j",
+  DEFAULT_ADMIN_USERNAME: admin_username = "admin",
+  DEFAULT_ADMIN_PASSWORD: admin_password = "admin",
 } = process.env
 
 let connected = false
@@ -40,11 +42,6 @@ const create_admin_if_not_exists = async () => {
   const session = driver.session()
 
   try {
-    const {
-      DEFAULT_ADMIN_USERNAME: admin_username = "admin",
-      DEFAULT_ADMIN_PASSWORD: admin_password = "admin",
-    } = process.env
-
     const password_hashed = await hash_password(admin_password)
 
     const query = `
