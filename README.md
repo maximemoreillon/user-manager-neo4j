@@ -2,7 +2,7 @@
 
 [![pipeline status](https://gitlab.com/moreillon_k8s/user_manager/badges/master/pipeline.svg)](https://gitlab.com/moreillon_k8s/user_manager/)
 [![coverage report](https://gitlab.com/moreillon_k8s/user_manager/badges/master/coverage.svg)](https://gitlab.com/moreillon_k8s/user_manager/)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/user-manager-neo4j)](https://artifacthub.io/packages/search?repo=user-manager-neo4j)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/jtekt)](https://artifacthub.io/packages/search?repo=jtekt)
 
 A simple user management and authentication service built around a Neo4J database
 
