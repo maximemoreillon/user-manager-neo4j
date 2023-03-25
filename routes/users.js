@@ -1,4 +1,4 @@
-const password_router = require("../password.js")
+const password_router = require("./password.js")
 const { Router } = require("express")
 const { middleware } = require("../controllers/auth.js")
 const {

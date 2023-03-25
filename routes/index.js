@@ -1,10 +1,10 @@
 const { Router } = require("express")
 const auth_router = require("./auth.js")
 const users_router = require("./users.js")
-const { commit } = require("../../commit.json")
-const { smtp } = require("../../mail.js")
-const { version, author } = require("../../package.json")
-const { url: neo4j_url, get_connected } = require("../../db.js")
+const { commit } = require("../commit.json")
+const { smtp } = require("../mail.js")
+const { version, author } = require("../package.json")
+const { url: neo4j_url, get_connected } = require("../db.js")
 
 const router = Router()
 
