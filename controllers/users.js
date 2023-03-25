@@ -78,12 +78,12 @@ exports.read_users = async (req, res, next) => {
     const {
       search,
       ids,
-      batch_size = 100,
-      start_index = 0,
+      limit = 100,
+      skip = 0,
+      order,
+      sort,
       ...filters
     } = req.query
-
-    console.log({ filters })
 
     const search_query = `
       // Make a list of the keys of each node
@@ -125,24 +125,24 @@ exports.read_users = async (req, res, next) => {
       WITH
         COLLECT(DISTINCT PROPERTIES(user)) as users,
         COUNT(DISTINCT user) as count,
-        toInteger($start_index) as start_index,
-        toInteger($batch_size) as batch_size,
-        (toInteger($start_index)+toInteger($batch_size)) as end_index
+        toInteger($skip) as skip,
+        toInteger($limit) as limit,
+        (toInteger($skip)+toInteger($limit)) as end_index
 
       // Batching
       RETURN
         count,
-        users[start_index..end_index] AS users,
-        start_index,
-        batch_size
+        users[skip..end_index] AS users,
+        skip,
+        limit
       `
 
     const parameters = {
       search,
       exceptions: ["password_hashed", "_id", "avatar_src"],
       ids,
-      start_index,
-      batch_size,
+      skip,
+      limit,
       filters,
     }
 
@@ -161,8 +161,8 @@ exports.read_users = async (req, res, next) => {
     })
 
     const response = {
-      batch_size: record.get("batch_size"),
-      start_index: record.get("start_index"),
+      limit: record.get("limit"),
+      skip: record.get("skip"),
       count: record.get("count"),
       users,
     }
