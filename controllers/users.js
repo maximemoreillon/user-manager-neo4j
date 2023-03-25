@@ -83,6 +83,8 @@ exports.read_users = async (req, res, next) => {
       ...filters
     } = req.query
 
+    console.log({ filters })
+
     const search_query = `
       // Make a list of the keys of each node
       // Additionally, filter out fields that should not be searched
