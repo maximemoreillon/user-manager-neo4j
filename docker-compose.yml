@@ -34,7 +34,7 @@ services:
   proxy:
     image: moreillon/api-proxy
     environment:
-      PROXY_API: http://user-manager-back/v2
+      PROXY_API: http://user-manager-back
       PROXY_ROOT: http://user-manager-front
     ports:
       - 8081:80

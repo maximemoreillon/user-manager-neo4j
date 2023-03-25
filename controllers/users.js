@@ -1,12 +1,12 @@
 const createHttpError = require("http-errors")
-const { driver } = require("../../db.js")
-const { user_query } = require("../../utils/users.js")
-const { hash_password } = require("../../utils/passwords.js")
+const { driver } = require("../db.js")
+const { user_query } = require("../utils/users.js")
+const { hash_password } = require("../utils/passwords.js")
 const {
   newUserSchema,
   userUpdateSchema,
   userAdminUpdateSchema,
-} = require("../../schemas/users.js")
+} = require("../schemas/users.js")
 
 function get_user_id_from_query_or_own(req, res) {
   let { user_id } = req.params
