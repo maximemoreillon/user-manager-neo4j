@@ -24,8 +24,8 @@ app.use(cors())
 app.use(apiMetrics())
 
 app.use("/", router)
-app.use("/v1", router) // Temporary alias
-app.use("/v2", router) // Temporary alias
+// app.use("/v1", router) // Temporary alias
+// app.use("/v2", router) // Temporary alias
 
 // Express error handler
 app.use((error, req, res, next) => {
