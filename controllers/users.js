@@ -141,6 +141,7 @@ exports.read_users = async (req, res, next) => {
       ids,
       start_index,
       batch_size,
+      filters,
     }
 
     const { records } = await session.run(query, parameters)
