@@ -95,28 +95,29 @@ exports.read_users = async (req, res, next) => {
 
       // Filter nodes by looking for properties
       WITH key
+      // NOTE: This overrides previous MATCH
       OPTIONAL MATCH (user:User)
       WHERE toLower(toString(user[key])) CONTAINS toLower($search)
       `
 
     const filtering_query = `
-      WITH user
       UNWIND KEYS($filters) as filterKey
-      WITH user
+      WITH filterKey
+      // NOTE: This overrides previous MATCH
+      OPTIONAL MATCH (user:User)
       WHERE user[filterKey] = $filters[filterKey]
       `
 
     const ids_query = `
-      // Discarding previous queries
+      // NOTE: This overrides previous MATCH
       WITH 1 as dummy
-
       UNWIND $ids as id
       OPTIONAL MATCH (user:User {_id: id})
       `
 
     const query = `
 
-      MATCH (user:User)
+      OPTIONAL MATCH (user:User)
       ${search ? search_query : ""}
       ${Object.keys(filters).length ? filtering_query : ""}
       ${ids ? ids_query : ""}
@@ -136,6 +137,8 @@ exports.read_users = async (req, res, next) => {
         skip,
         limit
       `
+
+    console.log(query)
 
     const parameters = {
       search,
