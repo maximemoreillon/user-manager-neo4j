@@ -109,9 +109,10 @@ exports.read_users = async (req, res, next) => {
       `
 
     const ids_query = `
-      // NOTE: This overrides previous MATCH
-      WITH 1 as dummy
       UNWIND $ids as id
+      // This WITH is needed to isolate from previous MATCH
+      WITH id
+      // NOTE: This overrides previous MATCH
       OPTIONAL MATCH (user:User {_id: id})
       `
 
@@ -137,8 +138,6 @@ exports.read_users = async (req, res, next) => {
         skip,
         limit
       `
-
-    console.log(query)
 
     const parameters = {
       search,
@@ -169,7 +168,6 @@ exports.read_users = async (req, res, next) => {
       count: record.get("count"),
       users,
     }
-    console.log(`[Neo4j] Users queried`)
 
     res.send(response)
   } catch (error) {
