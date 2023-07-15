@@ -1,8 +1,9 @@
-const Cookies = require("cookies")
-const dotenv = require("dotenv")
-const jwt = require("jsonwebtoken")
-const createHttpError = require("http-errors")
-const { get_id_of_user } = require("./users.js")
+import Cookies from "cookies"
+import dotenv from "dotenv"
+import jwt from "jsonwebtoken"
+import createHttpError from "http-errors"
+import { get_id_of_user } from "./users"
+import { Request, Response } from "express"
 
 dotenv.config()
 
@@ -10,7 +11,7 @@ const { JWT_SECRET } = process.env
 
 if (!JWT_SECRET) throw new Error(`Token secret not set`)
 
-exports.retrieve_jwt = (req, res) =>
+export const retrieve_jwt = (req: Request, res: Response) =>
   new Promise((resolve, reject) => {
     // Did not need to be a promise
 
@@ -27,7 +28,7 @@ exports.retrieve_jwt = (req, res) =>
     resolve(jwt)
   })
 
-exports.generate_token = (user) =>
+export const generate_token = (user: any) =>
   new Promise((resolve, reject) => {
     const user_id = get_id_of_user(user).toString() // forcing string
     const token_content = { user_id }
@@ -38,7 +39,7 @@ exports.generate_token = (user) =>
     })
   })
 
-exports.decode_token = (token) =>
+export const decode_token = (token: string) =>
   new Promise((resolve, reject) => {
     jwt.verify(token, JWT_SECRET, (error, decoded_token) => {
       if (error) return reject(createHttpError(403, `Invalid JWT`))

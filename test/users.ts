@@ -1,17 +1,18 @@
-const request = require("supertest")
-const { expect } = require("chai")
-const { app } = require("../index.js")
-const dotenv = require("dotenv")
+import request from "supertest"
+import { expect } from "chai"
+import { app } from "../index"
+import dotenv from "dotenv"
 dotenv.config()
 
-const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+const sleep = (delay: number) =>
+  new Promise((resolve) => setTimeout(resolve, delay))
 
 // We will test for api users
 describe("/users", () => {
   const { TEST_USERNAME = "admin", TEST_PASSWORD = "admin" } = process.env
 
-  let jwt
-  let new_user_id
+  let jwt: string, new_user_id: string
+
   const new_user = {
     username: "test_user",
     password: "banana",

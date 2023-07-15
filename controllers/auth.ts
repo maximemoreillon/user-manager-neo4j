@@ -1,26 +1,28 @@
-const dotenv = require("dotenv")
-const createHttpError = require("http-errors")
-const { driver } = require("../db.js")
-const { compare_password } = require("../utils/passwords.js")
-const {
-  decode_token,
-  generate_token,
-  retrieve_jwt,
-} = require("../utils/tokens.js")
-const {
+import dotenv from "dotenv"
+import createHttpError from "http-errors"
+import { driver } from "../db"
+import { compare_password } from "../utils/passwords"
+import { decode_token, generate_token, retrieve_jwt } from "../utils/tokens"
+import { Response, Request, NextFunction } from "express"
+
+import {
   user_query,
   find_user_in_db,
   register_last_login,
-} = require("../utils/users.js")
+} from "../utils/users"
 
 dotenv.config()
 
-exports.middleware = async (req, res, next) => {
+export const middleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   try {
     const token = await retrieve_jwt(req, res)
-    const { user_id } = await decode_token(token)
+    const { user_id } = (await decode_token(token as string)) as any
 
     const query = `${user_query} RETURN properties(user) as user`
 
@@ -43,7 +45,11 @@ exports.middleware = async (req, res, next) => {
   }
 }
 
-exports.login = async (req, res, next) => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     // Input management
     const identifier =
@@ -61,7 +67,7 @@ exports.login = async (req, res, next) => {
     console.log(`[Auth] Login attempt from user identified as ${identifier}`)
 
     // User query
-    const { properties: user } = await find_user_in_db(identifier)
+    const { properties: user } = (await find_user_in_db(identifier)) as any
 
     // Activated check
     if (!user.activated && !user.isAdmin)

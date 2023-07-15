@@ -1,20 +1,25 @@
-const createHttpError = require("http-errors")
-const { driver } = require("../db.js")
-const { user_query } = require("../utils/users.js")
-const { hash_password } = require("../utils/passwords.js")
-const {
+import createHttpError from "http-errors"
+import { driver } from "../db"
+import { user_query } from "../utils/users"
+import { hash_password } from "../utils/passwords"
+import {
   newUserSchema,
   userUpdateSchema,
   userAdminUpdateSchema,
-} = require("../schemas/users.js")
+} from "../schemas/users"
+import { Response, Request, NextFunction } from "express"
 
-function get_user_id_from_query_or_own(req, res) {
+function get_user_id_from_query_or_own(req: Request, res: Response) {
   let { user_id } = req.params
   if (user_id === "self") user_id = res.locals.user._id
   return user_id
 }
 
-exports.create_user = async (req, res, next) => {
+export const create_user = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   try {
@@ -28,7 +33,7 @@ exports.create_user = async (req, res, next) => {
     try {
       await newUserSchema.validateAsync(properties)
     } catch (error) {
-      throw createHttpError(400, error)
+      throw createHttpError(400, error as any)
     }
 
     const { username, password, email_address, display_name } = properties
@@ -71,7 +76,11 @@ exports.create_user = async (req, res, next) => {
   }
 }
 
-exports.read_users = async (req, res, next) => {
+export const read_users = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   try {
@@ -158,7 +167,7 @@ exports.read_users = async (req, res, next) => {
     const users = record.get("users")
 
     // Delete passwords from users
-    users.forEach((user) => {
+    users.forEach((user: any) => {
       delete user.password_hashed
     })
 
@@ -177,7 +186,11 @@ exports.read_users = async (req, res, next) => {
   }
 }
 
-exports.read_user = async (req, res, next) => {
+export const read_user = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   try {
@@ -202,18 +215,23 @@ exports.read_user = async (req, res, next) => {
   }
 }
 
-exports.delete_user = async (req, res, next) => {
+export const delete_user = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   try {
     const current_user = res.locals.user
+    const current_user_id = current_user._id
 
     // Prevent normal users to create a user
     // TODO: allow users to delete self
     if (!current_user.isAdmin) throw createHttpError(404, `Unauthorized`)
 
-    const user_id = req.params.user_id
-    if (user_id === "self") user_id = get_current_user_id(res)
+    let user_id = req.params.user_id
+    if (user_id === "self") user_id = current_user_id
 
     const query = `
       ${user_query}
@@ -234,7 +252,11 @@ exports.delete_user = async (req, res, next) => {
   }
 }
 
-exports.update_user = async (req, res, next) => {
+export const update_user = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   try {
@@ -255,7 +277,7 @@ exports.update_user = async (req, res, next) => {
     try {
       if (user_is_admin) await userAdminUpdateSchema.validateAsync(properties)
       else await userUpdateSchema.validateAsync(properties)
-    } catch (error) {
+    } catch (error: any) {
       throw createHttpError(403, error)
     }
 
