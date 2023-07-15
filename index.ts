@@ -1,12 +1,13 @@
 // modules
-const express = require("express")
-const bodyParser = require("body-parser")
-const cors = require("cors")
-const dotenv = require("dotenv")
-const apiMetrics = require("prometheus-api-metrics")
-const { version } = require("./package.json")
-const { init: db_init } = require("./db")
-const router = require("./routes")
+import express, { NextFunction, Request, Response } from "express"
+import bodyParser from "body-parser"
+import cors from "cors"
+import dotenv from "dotenv"
+import apiMetrics from "prometheus-api-metrics"
+import { version } from "./package.json"
+import { init as db_init } from "./db"
+import router from "./routes"
+
 dotenv.config()
 
 console.log(`== User manager (Neo4J version) v${version} ==`)
@@ -17,7 +18,7 @@ db_init()
 const { APP_PORT = 80 } = process.env
 
 // Express configuration
-const app = express()
+export const app = express()
 
 app.use(bodyParser.json())
 app.use(cors())
@@ -28,7 +29,7 @@ app.use("/", router)
 // app.use("/v2", router) // Temporary alias
 
 // Express error handler
-app.use((error, req, res, next) => {
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
   console.error(error)
   let { statusCode = 500, message = error } = error
   if (isNaN(statusCode) || statusCode > 600) statusCode = 500
@@ -38,5 +39,3 @@ app.use((error, req, res, next) => {
 app.listen(APP_PORT, () => {
   console.log(`[Express] Listening on *:${APP_PORT}`)
 })
-
-exports.app = app

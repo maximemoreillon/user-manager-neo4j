@@ -1,17 +1,22 @@
-const createHttpError = require("http-errors")
-const { passwordUpdateSchema } = require("../schemas/passwords.js")
-const { driver } = require("../db.js")
-const { send_password_reset_email } = require("../mail.js")
-const { user_query } = require("../utils/users.js")
-const { hash_password } = require("../utils/passwords.js")
+import createHttpError from "http-errors"
+import { passwordUpdateSchema } from "../schemas/passwords"
+import { driver } from "../db"
+import { send_password_reset_email } from "../mail"
+import { user_query } from "../utils/users"
+import { hash_password } from "../utils/passwords"
+import { Response, Request, NextFunction } from "express"
 
-exports.update_password = async (req, res, next) => {
+export const update_password = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   try {
     try {
       await passwordUpdateSchema.validateAsync(req.body)
-    } catch (error) {
+    } catch (error: any) {
       throw createHttpError(400, error.message)
     }
 
@@ -57,7 +62,11 @@ exports.update_password = async (req, res, next) => {
   }
 }
 
-exports.request_password_reset = async (req, res, next) => {
+export const request_password_reset = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const session = driver.session()
 
   const { PASSWORD_RESET_URL: url = req.headers.origin } = process.env

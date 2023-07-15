@@ -1,9 +1,9 @@
-const { Router } = require("express")
-const { middleware } = require("../controllers/auth.js")
-const {
+import { Router } from "express"
+import { middleware } from "../controllers/auth"
+import {
   update_password,
   request_password_reset,
-} = require("../controllers/password.js")
+} from "../controllers/password"
 
 const router = Router({ mergeParams: true })
 
@@ -14,4 +14,4 @@ router
 
 router.route("/reset").post(request_password_reset)
 
-module.exports = router
+export default router

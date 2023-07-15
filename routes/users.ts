@@ -1,13 +1,13 @@
-const password_router = require("./password.js")
-const { Router } = require("express")
-const { middleware } = require("../controllers/auth.js")
-const {
+import password_router from "./password"
+import { Router } from "express"
+import { middleware } from "../controllers/auth"
+import {
   create_user,
   read_users,
   read_user,
   update_user,
   delete_user,
-} = require("../controllers/users.js")
+} from "../controllers/users"
 
 const router = Router()
 
@@ -21,4 +21,4 @@ router
 
 router.use("/:user_id/password", password_router)
 
-module.exports = router
+export default router

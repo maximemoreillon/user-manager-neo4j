@@ -1,8 +1,9 @@
-const request = require("supertest")
-const { expect } = require("chai")
-const { app } = require("../index.js")
+import request from "supertest"
+import { expect } from "chai"
+import { app } from "../index"
 
-const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+const sleep = (delay: number) =>
+  new Promise((resolve) => setTimeout(resolve, delay))
 
 const { TEST_USERNAME = "admin", TEST_PASSWORD = "admin" } = process.env
 

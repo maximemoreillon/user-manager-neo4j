@@ -1,7 +1,6 @@
-const neo4j = require("neo4j-driver")
-const dotenv = require("dotenv")
-
-const { hash_password } = require("./utils/passwords.js")
+import neo4j from "neo4j-driver"
+import dotenv from "dotenv"
+import { hash_password } from "./utils/passwords"
 
 dotenv.config()
 
@@ -19,7 +18,7 @@ const auth = neo4j.auth.basic(NEO4J_USERNAME, NEO4J_PASSWORD)
 
 const options = { disableLosslessIntegers: true }
 
-const driver = neo4j.driver(NEO4J_URL, auth, options)
+export const driver = neo4j.driver(NEO4J_URL, auth, options)
 
 const get_connection_status = async () => {
   const session = driver.session()
@@ -120,7 +119,7 @@ const create_constraints = async () => {
   }
 }
 
-const init = async () => {
+export const init = async () => {
   if (await get_connection_status()) {
     connected = true
 
@@ -137,7 +136,5 @@ const init = async () => {
   }
 }
 
-exports.driver = driver
-exports.url = NEO4J_URL
-exports.init = init
-exports.get_connected = () => connected
+export const url = NEO4J_URL
+export const get_connected = () => connected
