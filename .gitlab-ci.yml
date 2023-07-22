@@ -16,7 +16,6 @@ variables:
   TEST_DB_PASSWORD: neo4j
   K8S_INGRESS_DOMAIN: api.users.maximemoreillon.com
 
-# Needed for Docker in docker build
 image: moreillon/ci-dind
 services:
   - name: docker:19.03.12-dind
@@ -28,10 +27,8 @@ build:
   tags:
     - dind
   before_script:
-    # Docker hub login
     - echo "${DOCKER_HUB_PASSWORD}" | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
   script:
-    - echo {\"commit\":\"${CI_COMMIT_SHORT_SHA}\"} > commit.json
     - docker build -t ${CONTAINER_IMAGE_TEST} .
     - docker push ${CONTAINER_IMAGE_TEST}
 
