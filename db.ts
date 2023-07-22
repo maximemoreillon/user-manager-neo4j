@@ -29,6 +29,7 @@ const get_connection_status = async () => {
     return true
   } catch (e) {
     console.log(`[Neo4J] Connection failed`)
+    console.log(e)
     return false
   } finally {
     session.close()
@@ -50,7 +51,7 @@ const create_admin_if_not_exists = async () => {
       // Check if the administrator account is missing its password
       // If the administrator account does not have a password (newly created), set it
       WITH administrator
-      WHERE NOT EXISTS(administrator.password_hashed)
+      WHERE administrator.password_hashed IS NULL
       SET administrator.password_hashed = $password_hashed
       SET administrator._id = randomUUID() // THIS IS IMPORTANT
       SET administrator.isAdmin = true
@@ -80,7 +81,7 @@ const create_admin_if_not_exists = async () => {
 const set_ids_to_nodes_without_ids = async () => {
   const id_setting_query = `
   MATCH (u:User)
-  WHERE NOT EXISTS(u._id)
+  WHERE u._id IS NULL
   SET u._id = toString(id(u))
   RETURN COUNT(u) as count
   `
@@ -103,12 +104,12 @@ const create_constraints = async () => {
   const session = driver.session()
 
   try {
-    await session.run(`CREATE CONSTRAINT ON (u:User) ASSERT u._id IS UNIQUE`)
+    await session.run(`CREATE CONSTRAINT FOR (u:User) REQUIRE u._id IS UNIQUE`)
     await session.run(
-      `CREATE CONSTRAINT ON (u:User) ASSERT u.email_address IS UNIQUE`
+      `CREATE CONSTRAINT FOR (u:User) REQUIRE u.email_address IS UNIQUE`
     )
     await session.run(
-      `CREATE CONSTRAINT ON (u:User) ASSERT u.username IS UNIQUE`
+      `CREATE CONSTRAINT FOR (u:User) REQUIRE u.username IS UNIQUE`
     )
     console.log(`[Neo4J] Created constraints`)
   } catch (error) {
