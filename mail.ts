@@ -68,9 +68,3 @@ export const send_password_reset_email = async ({ url, user }: any) => {
     throw `Error while sending email: ${e}`
   }
 }
-
-export const smtp = {
-  host: options.host,
-  port: options.port,
-  from: SMTP_FROM,
-}

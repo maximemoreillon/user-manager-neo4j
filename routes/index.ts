@@ -2,7 +2,7 @@ import { Router } from "express"
 import auth_router from "./auth"
 import users_router from "./users"
 import { commit } from "../commit.json"
-import { smtp } from "../mail"
+import { options as smtp_options } from "../mail"
 import { version, author } from "../package.json"
 import { url as neo4j_url, get_connected } from "../db"
 
@@ -18,7 +18,10 @@ router.get("/", (req, res) => {
       url: neo4j_url,
       connected: get_connected(),
     },
-    smtp,
+    smtp: {
+      host: smtp_options.host,
+      port: smtp_options.port,
+    },
   })
 })
 
