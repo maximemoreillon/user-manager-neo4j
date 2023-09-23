@@ -52,7 +52,7 @@ test:
       --network ${TEST_NETWORK}
       --hostname ${TEST_DB}
       --env NEO4J_AUTH=none
-      neo4j:4.4.16
+      neo4j:5.12.0
     - sleep 120 # Wait for Neo4J to become available
   script:
     # Run tests
