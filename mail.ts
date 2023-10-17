@@ -1,17 +1,23 @@
 import nodemailer from "nodemailer"
 import dotenv from "dotenv"
 import { generate_token } from "./utils/tokens"
+import { MailOptions } from "nodemailer/lib/json-transport"
+import SMTPTransport from "nodemailer/lib/smtp-transport"
 
 dotenv.config()
 
-// parsing environment
-const { SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_FROM } =
-  process.env
+const {
+  SMTP_HOST = "mail.example.com",
+  SMTP_PORT = 465,
+  SMTP_USERNAME = "username",
+  SMTP_PASSWORD = "password",
+  SMTP_FROM = "noreply@example.com",
+} = process.env
 
-export const options: any = {
+export const options: SMTPTransport.Options = {
   host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: true, // upgrade later with STARTTLS
+  port: Number(SMTP_PORT),
+  secure: true,
   auth: {
     user: SMTP_USERNAME,
     pass: SMTP_PASSWORD,
@@ -20,7 +26,7 @@ export const options: any = {
 
 export const transporter = nodemailer.createTransport(options)
 
-const send_email = (email: any) =>
+const send_email = (email: MailOptions) =>
   new Promise((resolve, reject) => {
     // This might already be a promise
     transporter.sendMail(email, (error: any, info: any) => {
