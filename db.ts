@@ -1,8 +1,5 @@
 import neo4j from "neo4j-driver"
-import dotenv from "dotenv"
 import { hash_password } from "./utils/passwords"
-
-dotenv.config()
 
 const {
   NEO4J_URL = "bolt://neo4j:7687",

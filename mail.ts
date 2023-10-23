@@ -1,10 +1,7 @@
 import nodemailer from "nodemailer"
-import dotenv from "dotenv"
 import { generate_token } from "./utils/tokens"
 import { MailOptions } from "nodemailer/lib/json-transport"
 import SMTPTransport from "nodemailer/lib/smtp-transport"
-
-dotenv.config()
 
 const {
   SMTP_HOST = "mail.example.com",

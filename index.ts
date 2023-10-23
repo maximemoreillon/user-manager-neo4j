@@ -1,13 +1,12 @@
+import dotenv from "dotenv"
+dotenv.config()
 import express, { NextFunction, Request, Response } from "express"
 import cors from "cors"
-import dotenv from "dotenv"
 import apiMetrics from "prometheus-api-metrics"
 import { version } from "./package.json"
 import { init as db_init } from "./db"
 import { init as cache_init } from "./cache"
 import router from "./routes"
-
-dotenv.config()
 
 console.log(`== User manager (Neo4J version) v${version} ==`)
 
