@@ -4,7 +4,7 @@ import { driver } from "../db"
 import { compare_password } from "../utils/passwords"
 import { decode_token, generate_token, retrieve_jwt } from "../utils/tokens"
 import { Response, Request, NextFunction } from "express"
-import { getUserFromCache, setUserInCache } from "../cache"
+import { getUserFromCache, setUserInCache, removeUserFromCache } from "../cache"
 import {
   user_query,
   find_user_in_db,
@@ -48,9 +48,8 @@ export const middleware = async (
       throw `Multiple users with ID ${user_id} found in the database`
 
     user = records[0].get("user")
-    user.cached = false
     await setUserInCache(user)
-
+    user.cached = false
     res.locals.user = user
 
     next()
@@ -100,13 +99,13 @@ export const login = async (
     )
     if (!password_correct) throw createHttpError(403, `Incorrect password`)
 
-    await register_last_login(user._id)
+    register_last_login(user._id)
+    removeUserFromCache(user._id)
 
     const jwt = await generate_token(user)
+    console.log(`[Auth] Successful login from user identified as ${identifier}`)
 
     res.send({ jwt, user })
-
-    console.log(`[Auth] Successful login from user identified as ${identifier}`)
   } catch (error) {
     next(error)
   }

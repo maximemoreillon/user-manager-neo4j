@@ -1,6 +1,6 @@
 import { RedisClientType, createClient } from "redis"
 
-const { REDIS_URL } = process.env
+export const { REDIS_URL } = process.env
 
 let client: RedisClientType
 
@@ -18,8 +18,6 @@ export const init = async () => {
 
   await client.connect()
 }
-
-export const getCache = () => client
 
 export const getUserFromCache = async (user_id: string) => {
   if (!client) return
