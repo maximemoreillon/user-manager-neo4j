@@ -187,7 +187,7 @@ export const read_user = async (
   next: NextFunction
 ) => {
   let { user_id } = req.params
-  if (user_id === "self") res.send(res.locals.user)
+  if (user_id === "self") return res.send(res.locals.user)
   if (!user_id) throw createHttpError(400, `User ID not defined`)
 
   let user = await getUserFromCache(user_id)
