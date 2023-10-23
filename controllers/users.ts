@@ -211,8 +211,7 @@ export const read_user = async (
     user = records[0].get("user")
     setUserInCache(user)
     delete user.password_hashed
-
-    console.log(`[Neo4J] User ${user_id} queried`)
+    user.cached = false
     res.send(user)
   } catch (error) {
     next(error)
