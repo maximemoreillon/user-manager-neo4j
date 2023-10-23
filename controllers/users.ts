@@ -8,12 +8,7 @@ import {
   userAdminUpdateSchema,
 } from "../schemas/users"
 import { Response, Request, NextFunction } from "express"
-
-function get_user_id_from_query_or_own(req: Request, res: Response) {
-  let { user_id } = req.params
-  if (user_id === "self") user_id = res.locals.user._id
-  return user_id
-}
+import { getUserFromCache, setUserInCache, removeUserFromCache } from "../cache"
 
 export const create_user = async (
   req: Request,
@@ -191,11 +186,20 @@ export const read_user = async (
   res: Response,
   next: NextFunction
 ) => {
+  let { user_id } = req.params
+  if (user_id === "self") res.send(res.locals.user)
+  if (!user_id) throw createHttpError(400, `User ID not defined`)
+
+  let user = await getUserFromCache(user_id)
+
+  if (user) {
+    delete user.password_hashed
+    return res.send(user)
+  }
+
   const session = driver.session()
 
   try {
-    const user_id = get_user_id_from_query_or_own(req, res)
-
     const query = `
       ${user_query}
       RETURN properties(user) as user
@@ -204,47 +208,12 @@ export const read_user = async (
 
     if (!records.length) throw createHttpError(404, `User ${user_id} not found`)
 
-    const user = records[0].get("user")
+    user = records[0].get("user")
+    setUserInCache(user)
+    delete user.password_hashed
 
     console.log(`[Neo4J] User ${user_id} queried`)
     res.send(user)
-  } catch (error) {
-    next(error)
-  } finally {
-    session.close()
-  }
-}
-
-export const delete_user = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const session = driver.session()
-
-  try {
-    const current_user = res.locals.user
-    const current_user_id = current_user._id
-
-    // Prevent normal users to create a user
-    // TODO: allow users to delete self
-    if (!current_user.isAdmin) throw createHttpError(404, `Unauthorized`)
-
-    let user_id = req.params.user_id
-    if (user_id === "self") user_id = current_user_id
-
-    const query = `
-      ${user_query}
-      DETACH DELETE user
-      RETURN $user_id as user_id
-      `
-
-    const { records } = await session.run(query, { user_id })
-
-    if (!records.length) throw createHttpError(404, `User ${user_id} not found`)
-
-    console.log(`[Neo4J] User ${user_id} deleted`)
-    res.send({ user_id })
   } catch (error) {
     next(error)
   } finally {
@@ -297,8 +266,47 @@ export const update_user = async (
     delete user.password_hashed
 
     console.log(`[Neo4J] User ${user_id} updated`)
-
+    removeUserFromCache(user_id)
     res.send(user)
+  } catch (error) {
+    next(error)
+  } finally {
+    session.close()
+  }
+}
+
+export const delete_user = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const session = driver.session()
+
+  try {
+    const current_user = res.locals.user
+    const current_user_id = current_user._id
+
+    // Prevent normal users to create a user
+    // TODO: allow users to delete self
+    if (!current_user.isAdmin) throw createHttpError(404, `Unauthorized`)
+
+    let user_id = req.params.user_id
+    if (user_id === "self") user_id = current_user_id
+
+    const query = `
+      ${user_query}
+      DETACH DELETE user
+      RETURN $user_id as user_id
+      `
+
+    const { records } = await session.run(query, { user_id })
+
+    if (!records.length) throw createHttpError(404, `User ${user_id} not found`)
+
+    console.log(`[Neo4J] User ${user_id} deleted`)
+    removeUserFromCache(user_id)
+
+    res.send({ user_id })
   } catch (error) {
     next(error)
   } finally {

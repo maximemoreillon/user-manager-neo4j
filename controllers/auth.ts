@@ -4,7 +4,7 @@ import { driver } from "../db"
 import { compare_password } from "../utils/passwords"
 import { decode_token, generate_token, retrieve_jwt } from "../utils/tokens"
 import { Response, Request, NextFunction } from "express"
-
+import { getUserFromCache, setUserInCache } from "../cache"
 import {
   user_query,
   find_user_in_db,
@@ -18,21 +18,38 @@ export const middleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  const session = driver.session()
+  let user_id: string
 
   try {
     const token = await retrieve_jwt(req, res)
-    const { user_id } = (await decode_token(token as string)) as any
+    const decodedToken = (await decode_token(token as string)) as any
+    user_id = decodedToken.user_id
+    if (!user_id) throw `Token does not contain user_id`
+  } catch (error) {
+    console.log(error)
+    res.status(403).send(error)
+    return
+  }
 
+  let user: any = await getUserFromCache(user_id)
+  if (user) {
+    res.locals.user = user
+    next()
+    return
+  }
+
+  const session = driver.session()
+  try {
     const query = `${user_query} RETURN properties(user) as user`
-
     const { records } = await session.run(query, { user_id })
 
     if (!records.length) throw `User ${user_id} not found in the database`
     if (records.length > 1)
       throw `Multiple users with ID ${user_id} found in the database`
 
-    const user = records[0].get("user")
+    user = records[0].get("user")
+    user.cached = false
+    await setUserInCache(user)
 
     res.locals.user = user
 
