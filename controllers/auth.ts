@@ -48,7 +48,7 @@ export const middleware = async (
       throw `Multiple users with ID ${user_id} found in the database`
 
     user = records[0].get("user")
-    await setUserInCache(user)
+    setUserInCache(user)
     user.cached = false
     res.locals.user = user
 
