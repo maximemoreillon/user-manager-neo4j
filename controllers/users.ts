@@ -80,7 +80,7 @@ export const read_users = async (
 
   try {
     const {
-      search,
+      search = "",
       ids,
       limit = 100,
       skip = 0,
@@ -89,20 +89,10 @@ export const read_users = async (
       ...filters
     } = req.query
 
-    const search_query = `
-      // Make a list of the keys of each node
-      // Additionally, filter out fields that should not be searched
-      WITH [key IN KEYS(user) WHERE NOT key IN $exceptions] AS keys
-
-      // Unwinding all searchable keys
-      UNWIND keys as key
-
-      // Filter nodes by looking for properties
-      WITH key
-      // NOTE: This overrides previous MATCH
-      OPTIONAL MATCH (user:User)
-      WHERE toLower(toString(user[key])) CONTAINS toLower($search)
-      `
+    const searchableFields = ["username", "email_address", "display_name"]
+    const searchArgs = searchableFields
+      .map((f) => `toLower(user.${f}) CONTAINS toLower($search)`)
+      .join(" OR ")
 
     const filtering_query = `
       UNWIND KEYS($filters) as filterKey
@@ -123,7 +113,7 @@ export const read_users = async (
     const query = `
 
       OPTIONAL MATCH (user:User)
-      ${search ? search_query : ""}
+      WHERE ${searchArgs}
       ${Object.keys(filters).length ? filtering_query : ""}
       ${ids ? ids_query : ""}
 
