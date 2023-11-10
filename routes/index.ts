@@ -1,7 +1,7 @@
 import { Router } from "express"
 import auth_router from "./auth"
 import users_router from "./users"
-import { options as smtp_options } from "../mail"
+import { SMTP_HOST, SMTP_PORT, SMTP_FROM } from "../mail"
 import { version, author } from "../package.json"
 import { url as neo4j_url, get_connected } from "../db"
 import { REDIS_URL } from "../cache"
@@ -18,8 +18,9 @@ router.get("/", (req, res) => {
       connected: get_connected(),
     },
     smtp: {
-      host: smtp_options.host,
-      port: smtp_options.port,
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      from: SMTP_FROM,
     },
     redis: {
       url: REDIS_URL,

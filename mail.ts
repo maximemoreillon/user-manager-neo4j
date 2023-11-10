@@ -3,7 +3,7 @@ import { generate_token } from "./utils/tokens"
 import { MailOptions } from "nodemailer/lib/json-transport"
 import SMTPTransport from "nodemailer/lib/smtp-transport"
 
-const {
+export const {
   SMTP_HOST = "mail.example.com",
   SMTP_PORT = 465,
   SMTP_USERNAME = "username",
