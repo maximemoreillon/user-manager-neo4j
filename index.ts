@@ -2,7 +2,7 @@ import dotenv from "dotenv"
 dotenv.config()
 import express from "express"
 import cors from "cors"
-import apiMetrics from "prometheus-api-metrics"
+import promBundle from "express-prom-bundle"
 import { version } from "./package.json"
 import { init as db_init } from "./db"
 import { init as cache_init } from "./cache"
@@ -19,7 +19,7 @@ export const app = express()
 
 app.use(express.json())
 app.use(cors())
-app.use(apiMetrics())
+app.use(promBundle({ includeMethod: true }))
 app.use("/", router)
 app.use(errorHandler)
 
