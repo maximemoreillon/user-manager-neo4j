@@ -14,12 +14,13 @@ db_init()
 cache_init()
 
 const { APP_PORT = 80 } = process.env
+const promOptions = { includeMethod: true, includePath: true }
 
 export const app = express()
 
 app.use(express.json())
 app.use(cors())
-app.use(promBundle({ includeMethod: true }))
+app.use(promBundle(promOptions))
 app.use("/", router)
 app.use(errorHandler)
 
