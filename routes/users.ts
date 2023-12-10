@@ -1,4 +1,5 @@
 import password_router from "./password"
+import token_router from "./token"
 import { Router } from "express"
 import { middleware } from "../controllers/auth"
 import {
@@ -20,5 +21,6 @@ router
   .patch(middleware, update_user)
 
 router.use("/:user_id/password", password_router)
+router.use("/:user_id/token", token_router)
 
 export default router

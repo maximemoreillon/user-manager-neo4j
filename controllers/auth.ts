@@ -19,11 +19,13 @@ export const middleware = async (
   next: NextFunction
 ) => {
   let user_id: string
+  let decodedToken: any
 
   try {
     const token = await retrieve_jwt(req, res)
-    const decodedToken = (await decode_token(token as string)) as any
+    decodedToken = (await decode_token(token as string)) as any
     user_id = decodedToken.user_id
+
     if (!user_id) throw `Token does not contain user_id`
   } catch (error) {
     console.log(error)
@@ -33,6 +35,9 @@ export const middleware = async (
 
   let user: any = await getUserFromCache(user_id)
   if (user) {
+    if (decodedToken.token_id !== user.token_id)
+      return res.status(403).send(`Token has been revoked`)
+
     res.locals.user = user
     next()
     return
@@ -48,6 +53,9 @@ export const middleware = async (
       throw `Multiple users with ID ${user_id} found in the database`
 
     user = records[0].get("user")
+
+    if (decodedToken.token_id !== user.token_id) throw `Token has been revoked`
+
     setUserInCache(user)
     user.cached = false
     res.locals.user = user
@@ -85,12 +93,14 @@ export const login = async (
     // User query
     const { properties: user } = (await find_user_in_db(identifier)) as any
 
+    const { activated, isAdmin, locked } = user
+
     // Activated check
-    if (!user.activated && !user.isAdmin)
+    if (!activated && !isAdmin)
       throw createHttpError(403, `This user is not activated`)
 
     // Lock check
-    if (user.locked) throw createHttpError(403, `This account is locked`)
+    if (locked) throw createHttpError(403, `This account is locked`)
 
     // Password check
     const password_correct = await compare_password(

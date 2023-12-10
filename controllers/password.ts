@@ -39,11 +39,11 @@ export const update_password = async (
     const password_hashed = await hash_password(new_password)
 
     const query = `
-            ${user_query}
-            SET user.password_hashed = $password_hashed
-            SET user.password_changed = true
-            RETURN user
-            `
+      ${user_query}
+      SET user.password_hashed = $password_hashed
+      SET user.password_changed = true
+      RETURN user
+      `
 
     const params = { user_id, password_hashed }
 
