@@ -30,7 +30,7 @@ export const revokeToken = async (
       RETURN user
       `
 
-    const { records } = await session.run(query, {})
+    const { records } = await session.run(query, { user_id })
     if (!records.length) throw createHttpError(404, `User ${user_id} not found`)
 
     const { properties: user } = records[0].get("user")

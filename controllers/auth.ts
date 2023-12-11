@@ -23,7 +23,7 @@ export const middleware = async (
 
   try {
     const token = await retrieve_jwt(req, res)
-    decodedToken = (await decode_token(token as string)) as any
+    decodedToken = await decode_token(token as string)
     user_id = decodedToken.user_id
 
     if (!user_id) throw `Token does not contain user_id`
