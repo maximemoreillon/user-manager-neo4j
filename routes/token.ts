@@ -4,9 +4,6 @@ import { revokeToken } from "../controllers/tokens"
 
 const router = Router({ mergeParams: true })
 
-router
-  .route("/token")
-  .put(middleware, revokeToken)
-  .delete(middleware, revokeToken)
+router.route("/").put(middleware, revokeToken).delete(middleware, revokeToken)
 
 export default router
