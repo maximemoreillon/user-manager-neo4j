@@ -1,6 +1,8 @@
 import dotenv from "dotenv"
 dotenv.config()
 import express from "express"
+import "express-async-errors"
+
 import cors from "cors"
 import promBundle from "express-prom-bundle"
 import { version } from "./package.json"
