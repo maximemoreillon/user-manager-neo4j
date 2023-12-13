@@ -16,6 +16,8 @@ export const retrieve_jwt = (req: Request, res: Response) =>
     // Did not need to be a promise
 
     const jwt =
+      req.body?.token ||
+      req.body?.jwt ||
       req.headers.authorization?.split(" ")[1] ||
       req.headers.authorization ||
       new Cookies(req, res).get("jwt") ||

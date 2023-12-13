@@ -3,6 +3,7 @@ import createHttpError from "http-errors"
 import { removeUserFromCache } from "../cache"
 import { user_query } from "../utils/users"
 import { driver } from "../db"
+import { decode_token, retrieve_jwt } from "../utils/tokens"
 
 export const revokeToken = async (
   req: Request,
@@ -44,4 +45,12 @@ export const revokeToken = async (
   } finally {
     session.close()
   }
+}
+
+export const decodeAccessToken = async (req: Request, res: Response) => {
+  const accessToken = await retrieve_jwt(req, res)
+  if (!accessToken) throw "Access token not found"
+  const decodedToken = await decode_token(accessToken as string)
+  if (!decodedToken) throw "Invalid token"
+  res.send(decodedToken)
 }

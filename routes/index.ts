@@ -5,6 +5,7 @@ import { SMTP_HOST, SMTP_PORT, SMTP_FROM } from "../mail"
 import { version, author } from "../package.json"
 import { url as neo4j_url, get_connected } from "../db"
 import { REDIS_URL } from "../cache"
+import { JWT_EXPIRATION_TIME } from "../controllers/auth"
 
 const router = Router()
 
@@ -25,6 +26,7 @@ router.get("/", (req, res) => {
     redis: {
       url: REDIS_URL,
     },
+    jwt_expiration_time: JWT_EXPIRATION_TIME,
   })
 })
 

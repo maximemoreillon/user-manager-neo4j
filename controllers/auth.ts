@@ -13,59 +13,57 @@ import {
 
 dotenv.config()
 
+export const { JWT_EXPIRATION_TIME = "infinite" } = process.env
+
 export const middleware = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  let user_id: string
-  let decodedToken: any
-
   try {
     const token = await retrieve_jwt(req, res)
-    decodedToken = await decode_token(token as string)
-    user_id = decodedToken.user_id
+    const decodedToken = (await decode_token(token as string)) as any
+    const { user_id, token_id: tokenIdFromToken, iat } = decodedToken
 
     if (!user_id) throw `Token does not contain user_id`
-  } catch (error) {
-    console.log(error)
-    res.status(403).send(error)
-    return
-  }
 
-  let user: any = await getUserFromCache(user_id)
-  if (user) {
-    if (decodedToken.token_id !== user.token_id)
-      return res.status(403).send(`Token has been revoked`)
+    let user: any = await getUserFromCache(user_id)
+
+    if (!user) {
+      const session = driver.session()
+      try {
+        const query = `${user_query} RETURN properties(user) as user`
+        const { records } = await session.run(query, { user_id })
+
+        if (!records.length) throw `User ${user_id} not found in the database`
+        if (records.length > 1)
+          throw `Multiple users with ID ${user_id} found in the database`
+
+        user = records[0].get("user")
+
+        setUserInCache(user)
+        user.cached = false
+      } catch (error) {
+        throw error
+      } finally {
+        session.close()
+      }
+    }
+
+    if (!user) throw "User does not exist"
+
+    // Token checks
+    if (tokenIdFromToken !== user.token_id) throw `Token has been revoked`
+    if (JWT_EXPIRATION_TIME && JWT_EXPIRATION_TIME !== "infinite") {
+      const now = new Date().getTime() / 1000
+      if (now - iat) throw `Token has expired`
+    }
 
     res.locals.user = user
     next()
-    return
-  }
-
-  const session = driver.session()
-  try {
-    const query = `${user_query} RETURN properties(user) as user`
-    const { records } = await session.run(query, { user_id })
-
-    if (!records.length) throw `User ${user_id} not found in the database`
-    if (records.length > 1)
-      throw `Multiple users with ID ${user_id} found in the database`
-
-    user = records[0].get("user")
-
-    if (decodedToken.token_id !== user.token_id) throw `Token has been revoked`
-
-    setUserInCache(user)
-    user.cached = false
-    res.locals.user = user
-
-    next()
   } catch (error) {
     console.log(error)
     res.status(403).send(error)
-  } finally {
-    session.close()
   }
 }
 
@@ -113,6 +111,8 @@ export const login = async (
     removeUserFromCache(user._id)
 
     const jwt = await generate_token(user)
+    // TODO: refresh token
+
     console.log(`[Auth] Successful login from user identified as ${identifier}`)
 
     res.send({ jwt, user })

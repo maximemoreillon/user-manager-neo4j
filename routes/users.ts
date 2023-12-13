@@ -1,5 +1,4 @@
 import password_router from "./password"
-import token_router from "./token"
 import { Router } from "express"
 import { middleware } from "../controllers/auth"
 import {
@@ -9,6 +8,7 @@ import {
   update_user,
   delete_user,
 } from "../controllers/users"
+import { revokeToken } from "../controllers/accessTokens"
 
 const router = Router()
 
@@ -20,7 +20,11 @@ router
   .delete(middleware, delete_user)
   .patch(middleware, update_user)
 
+router
+  .route("/:user_id/token")
+  .put(middleware, revokeToken)
+  .delete(middleware, revokeToken)
+
 router.use("/:user_id/password", password_router)
-router.use("/:user_id/token", token_router)
 
 export default router
