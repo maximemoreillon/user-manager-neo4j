@@ -7,6 +7,7 @@ import { decodeAccessToken } from "../controllers/accessTokens"
 const router = express.Router()
 
 router.route("/login").post(login)
+router.route("/token").post(decodeAccessToken)
 router.route("/access-token").post(decodeAccessToken)
 router.route("/refresh-token").post(refreshAccessToken)
 router.route("/password/reset").post(request_password_reset)
