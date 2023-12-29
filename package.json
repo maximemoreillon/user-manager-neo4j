@@ -8,7 +8,8 @@
     "start": "node ./build/index.js",
     "build": "tsc -p .",
     "test": "mocha -r ts-node/register test/*.ts --timeout 10000 --exit",
-    "coverage": "nyc mocha -r ts-node/register test/*.ts --timeout 15000 --exit"
+    "coverage": "nyc mocha -r ts-node/register test/*.ts --timeout 15000 --exit",
+    "swagger-autogen": "ts-node swagger.ts"
   },
   "author": "Maxime MOREILLON",
   "license": "MIT",
@@ -29,7 +30,9 @@
     "neo4j-driver": "^5.13.0",
     "nodemailer": "^6.7.5",
     "prom-client": "^15.0.0",
-    "redis": "^4.6.10"
+    "redis": "^4.6.10",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
@@ -41,6 +44,7 @@
     "@types/mocha": "^10.0.1",
     "@types/nodemailer": "^6.4.8",
     "@types/supertest": "^2.0.12",
+    "@types/swagger-ui-express": "^4.1.6",
     "chai": "^4.3.6",
     "nodemon": "^3.0.1",
     "nyc": "^15.1.0",

@@ -5,6 +5,9 @@ import "express-async-errors"
 
 import cors from "cors"
 import promBundle from "express-prom-bundle"
+import swaggerUi from "swagger-ui-express"
+import swaggerDocument from "./swagger-output.json"
+
 import { version } from "./package.json"
 import { init as db_init } from "./db"
 import { init as cache_init } from "./cache"
@@ -23,6 +26,7 @@ export const app = express()
 app.use(express.json())
 app.use(cors())
 app.use(promBundle(promOptions))
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 app.use("/", router)
 app.use(errorHandler)
 
