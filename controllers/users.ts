@@ -176,7 +176,7 @@ export const read_user = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { user_id } = req.params
+  const { user_id } = req.params
   if (user_id === "self") return res.send(res.locals.user)
   if (!user_id) throw createHttpError(400, `User ID not defined`)
 
