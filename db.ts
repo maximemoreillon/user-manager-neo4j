@@ -121,10 +121,11 @@ export const init = async () => {
   if (await get_connection_status()) {
     connected = true
 
-    console.log("[Neo4J] Initializing DB")
+    console.log("[Neo4J] Initializing DB...")
     await create_admin_if_not_exists()
     await set_ids_to_nodes_without_ids()
     await create_constraints()
+    console.log("[Neo4J] DB initialized")
   } else {
     setTimeout(init, 10000)
   }
